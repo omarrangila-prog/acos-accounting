@@ -1,0 +1,10 @@
+node_modules/
+dist/
+dist-electron/
+.prisma/
+prisma/acos.db
+*.db
+*.db-shm
+*.db-wal
+.env
+.DS_Store

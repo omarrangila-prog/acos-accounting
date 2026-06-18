@@ -1,0 +1,218 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./acos.db"
+}
+
+model Customer {
+  id             String    @id @default(cuid())
+  name           String
+  company        String?
+  phone          String?
+  whatsapp       String?
+  email          String?
+  address        String?
+  ntn            String?
+  creditLimit    Float     @default(0)
+  openingBalance Float     @default(0)
+  currentBalance Float     @default(0)
+  notes          String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  invoices       Invoice[]
+  payments       Payment[]
+  pdcReceivable  PDCReceivable[]
+  statements     CustomerStatement[]
+}
+
+model Supplier {
+  id             String    @id @default(cuid())
+  name           String
+  company        String?
+  phone          String?
+  email          String?
+  address        String?
+  ntn            String?
+  currentBalance Float     @default(0)
+  openingBalance Float     @default(0)
+  notes          String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  bills          Bill[]
+  billPayments   BillPayment[]
+  pdcPayable     PDCPayable[]
+}
+
+model Invoice {
+  id            String    @id @default(cuid())
+  invoiceNumber String    @unique
+  customerId    String
+  customer      Customer  @relation(fields: [customerId], references: [id])
+  date          DateTime
+  dueDate       DateTime
+  amount        Float
+  paidAmount    Float     @default(0)
+  status        String    @default("draft")
+  notes         String?
+  items         String?
+  currency      String    @default("PKR")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  payments      Payment[]
+}
+
+model Payment {
+  id         String   @id @default(cuid())
+  invoiceId  String
+  invoice    Invoice  @relation(fields: [invoiceId], references: [id])
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id])
+  amount     Float
+  date       DateTime
+  method     String   @default("cash")
+  reference  String?
+  notes      String?
+  createdAt  DateTime @default(now())
+}
+
+model Bill {
+  id         String        @id @default(cuid())
+  billNumber String        @unique
+  supplierId String
+  supplier   Supplier      @relation(fields: [supplierId], references: [id])
+  date       DateTime
+  dueDate    DateTime
+  amount     Float
+  paidAmount Float         @default(0)
+  status     String        @default("pending")
+  category   String        @default("general")
+  notes      String?
+  attachmentUrl String?
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+  payments   BillPayment[]
+}
+
+model BillPayment {
+  id         String   @id @default(cuid())
+  billId     String
+  bill       Bill     @relation(fields: [billId], references: [id])
+  supplierId String
+  supplier   Supplier @relation(fields: [supplierId], references: [id])
+  amount     Float
+  date       DateTime
+  method     String   @default("cash")
+  reference  String?
+  notes      String?
+  createdAt  DateTime @default(now())
+}
+
+model PDCReceivable {
+  id          String   @id @default(cuid())
+  customerId  String
+  customer    Customer @relation(fields: [customerId], references: [id])
+  checkNumber String
+  bank        String
+  amount      Float
+  issueDate   DateTime
+  depositDate DateTime
+  status      String   @default("pending")
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model PDCPayable {
+  id          String   @id @default(cuid())
+  supplierId  String
+  supplier    Supplier @relation(fields: [supplierId], references: [id])
+  checkNumber String
+  bank        String
+  amount      Float
+  issueDate   DateTime
+  dueDate     DateTime
+  status      String   @default("pending")
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Expense {
+  id              String   @id @default(cuid())
+  category        String
+  description     String
+  amount          Float
+  date            DateTime
+  receiptUrl      String?
+  isRecurring     Boolean  @default(false)
+  recurringPeriod String?
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Transaction {
+  id          String   @id @default(cuid())
+  type        String
+  referenceId String?
+  description String
+  amount      Float
+  date        DateTime
+  category    String?
+  tags        String?
+  notes       String?
+  createdAt   DateTime @default(now())
+}
+
+model CustomerStatement {
+  id          String   @id @default(cuid())
+  customerId  String
+  customer    Customer @relation(fields: [customerId], references: [id])
+  type        String
+  description String
+  debit       Float    @default(0)
+  credit      Float    @default(0)
+  balance     Float    @default(0)
+  date        DateTime
+  referenceId String?
+  createdAt   DateTime @default(now())
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String   @default("admin")
+  userName  String   @default("Admin")
+  action    String
+  entity    String
+  entityId  String
+  changes   String?
+  timestamp DateTime @default(now())
+}
+
+model AppSettings {
+  id          String  @id @default("1")
+  companyName String  @default("My Business")
+  address     String?
+  phone       String?
+  email       String?
+  ntn         String?
+  logoUrl     String?
+  currency    String  @default("PKR")
+  language    String  @default("en")
+  darkMode    Boolean @default(false)
+  updatedAt   DateTime @updatedAt
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  type      String   @default("info")
+  title     String
+  message   String
+  read      Boolean  @default(false)
+  entityId  String?
+  entityType String?
+  createdAt DateTime @default(now())
+}
