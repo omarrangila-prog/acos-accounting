@@ -11,9 +11,16 @@ import { ExpensesPage } from './pages/ExpensesPage'
 import { AnalyticsPage } from './pages/AnalyticsPage'
 import { ReportsPage } from './pages/ReportsPage'
 
+const AUTO_REFRESH_INTERVAL_MS = 5 * 60 * 1000
+
 export default function App() {
-  const { activePage, darkMode, setDarkMode } = useStore()
+  const { activePage, darkMode, setDarkMode, triggerRefresh } = useStore()
   useEffect(() => { document.documentElement.classList.toggle('dark', darkMode) }, [darkMode])
+  useEffect(() => {
+    const intervalId = window.setInterval(triggerRefresh, AUTO_REFRESH_INTERVAL_MS)
+    return () => window.clearInterval(intervalId)
+  }, [triggerRefresh])
+
   const pages: Record<string, React.ReactNode> = {
     dashboard: <DashboardPage />, invoices: <InvoicesPage />,
     receivables: <ReceivablesPage />, payables: <PayablesPage />,

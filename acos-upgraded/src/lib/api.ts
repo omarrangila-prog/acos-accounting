@@ -1,20 +1,23 @@
 const isElectron = typeof window !== 'undefined' && (window as any).api
 function call<T>(method: string, ...args: any[]): Promise<T> {
-  if (isElectron) return (window as any).api[method](...args)
+  if (isElectron) {
+    const bridgeMethod = (window as any).api?.[method]
+    if (typeof bridgeMethod === 'function') return bridgeMethod(...args)
+  }
   return Promise.resolve(stub(method) as T)
 }
 function stub(m: string): any {
   const s: Record<string,any> = {
     getSettings:{id:'1',companyName:'My Business',currency:'PKR'},
     getDashboard:{totalReceivables:0,monthRevenue:0,monthExpenses:0,netProfit:0,pdcTotal:0,overdueCount:0,overdueTotal:0,outstandingInvoices:0,monthlyData:[],weeklyData:[],expByCategory:[],recentPayments:[],agingData:[]},
-    getCustomers:[],getInvoices:[],getBills:[],getExpenses:[],getPDCReceivable:[],getNotifications:[],getReport:{},getAuditLogs:[],
+    getCustomers:[],getInvoices:[],getBills:[],getExpenses:[],getPDCReceivable:[],getPDCPayable:[],getSuppliers:[],getNotifications:[],getReport:{},getAuditLogs:[],
     getNextInvoiceNumber:'INV-0001',getNextBillNumber:'BILL-0001',
     gdriveGetStatus:{connected:false},
     addCustomer:{success:true,id:'1'},updateCustomer:{success:true},deleteCustomer:{success:true},updateCustomerBalance:{success:true},
     addInvoice:{success:true,id:'1'},updateInvoice:{success:true},deleteInvoice:{success:true},recordPayment:{success:true},
     addBill:{success:true,id:'1'},updateBill:{success:true},deleteBill:{success:true},recordBillPayment:{success:true},
     addExpense:{success:true,id:'1'},updateExpense:{success:true},deleteExpense:{success:true},
-    addPDCReceivable:{success:true},updatePDCReceivable:{success:true},deletePDC:{success:true},
+    addPDCReceivable:{success:true},updatePDCReceivable:{success:true},addPDCPayable:{success:true},updatePDCPayable:{success:true},deletePDC:{success:true},
     saveSettings:{success:true},backupDatabase:{success:true},markNotificationRead:{success:true},
     gdriveConnect:{success:false,error:'Run in Electron'},gdriveSetCode:{success:false},gdriveBackup:{success:false,error:'Run in Electron'},gdriveDisconnect:{success:true},
   }
@@ -53,8 +56,12 @@ export const api = {
   deleteExpense: (id: string) => call('deleteExpense', id),
   // PDC
   getPDCReceivable: () => call('getPDCReceivable'),
+  getPDCPayable: () => call('getPDCPayable'),
+  getSuppliers: () => call('getSuppliers'),
   addPDCReceivable: (d: any) => call('addPDCReceivable', d),
   updatePDCReceivable: (id: string, s: string) => call('updatePDCReceivable', id, s),
+  addPDCPayable: (d: any) => call('addPDCPayable', d),
+  updatePDCPayable: (id: string, s: string) => call('updatePDCPayable', id, s),
   deletePDC: (id: string) => call('deletePDC', id),
   // Reports
   getReport: (p: any) => call('getReport', p),

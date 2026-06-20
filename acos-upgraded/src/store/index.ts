@@ -5,6 +5,8 @@ interface AppStore {
   setActivePage: (p: ActivePage) => void
   darkMode: boolean
   setDarkMode: (v: boolean) => void
+  language: 'en' | 'ur'
+  setLanguage: (v: 'en' | 'ur') => void
   refreshKey: number
   triggerRefresh: () => void
   notifications: any[]
@@ -15,6 +17,8 @@ export const useStore = create<AppStore>((set) => ({
   setActivePage: (page) => set({ activePage: page }),
   darkMode: false,
   setDarkMode: (v) => set({ darkMode: v }),
+  language: 'en',
+  setLanguage: (v) => set({ language: v }),
   refreshKey: 0,
   triggerRefresh: () => set((s) => ({ refreshKey: s.refreshKey + 1 })),
   notifications: [],

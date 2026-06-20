@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Bell, RefreshCw, Moon, Sun, Cloud, CloudOff, CloudUpload, X, CheckCircle, Loader, AlertCircle, ExternalLink } from 'lucide-react'
+import { Bell, RefreshCw, Moon, Sun, Cloud, CloudOff, UploadCloud as CloudUpload, X, CheckCircle, Loader, AlertCircle, ExternalLink } from 'lucide-react'
 import { useStore } from '../../store'
 import { api } from '../../lib/api'
 import { cn } from '../../lib/utils'
