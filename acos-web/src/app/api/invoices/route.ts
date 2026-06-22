@@ -30,28 +30,48 @@ export async function GET(req: NextRequest) {
   }
 }
 
+// Next number derived from the highest existing INV-#### (not count()), so
+// deletions never cause a duplicate against the unique constraint.
+async function nextInvoiceNumber(): Promise<string> {
+  const last = await prisma.invoice.findFirst({
+    where: { invoiceNumber: { startsWith: 'INV-' } },
+    orderBy: { invoiceNumber: 'desc' },
+    select: { invoiceNumber: true },
+  })
+  const n = last ? parseInt(last.invoiceNumber.replace('INV-', ''), 10) || 0 : 0
+  return `INV-${String(n + 1).padStart(4, '0')}`
+}
+
 export async function POST(req: NextRequest) {
   try {
     const b = await req.json()
-    const count = await prisma.invoice.count()
-    const invoiceNumber = b.invoiceNumber || `INV-${String(count + 1).padStart(4, '0')}`
     const amount = Number(b.amount) || 0
     const paid = Number(b.paidAmount) || 0
     const dueDate = b.dueDate ? new Date(b.dueDate) : null
-    const inv = await prisma.invoice.create({
-      data: {
-        invoiceNumber,
-        customerId: b.customerId || null,
-        customerName: b.customerName || null,
-        date: b.date ? new Date(b.date) : new Date(),
-        dueDate,
-        amount,
-        paidAmount: paid,
-        status: deriveStatus(amount, paid, dueDate),
-        notes: b.notes || null,
-      },
-    })
-    return NextResponse.json({ success: true, id: inv.id })
+    const data = {
+      customerId: b.customerId || null,
+      customerName: b.customerName || null,
+      date: b.date ? new Date(b.date) : new Date(),
+      dueDate,
+      amount,
+      paidAmount: paid,
+      status: deriveStatus(amount, paid, dueDate),
+      notes: b.notes || null,
+    }
+
+    // Retry once on a unique-collision (concurrent creates) with a fresh number.
+    let inv
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const invoiceNumber = b.invoiceNumber || (await nextInvoiceNumber())
+      try {
+        inv = await prisma.invoice.create({ data: { invoiceNumber, ...data } })
+        break
+      } catch (err: any) {
+        if (err?.code === 'P2002' && !b.invoiceNumber && attempt === 0) continue
+        throw err
+      }
+    }
+    return NextResponse.json({ success: true, id: inv!.id })
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 })
   }
