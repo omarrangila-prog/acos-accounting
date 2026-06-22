@@ -1,0 +1,89 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Customer {
+  id             String        @id @default(cuid())
+  name           String
+  phone          String?
+  address        String?
+  openingBalance Float         @default(0)
+  // "debit" = receivable (they owe us), "credit" = payable (we owe them)
+  balanceType    String        @default("debit")
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  invoices       Invoice[]
+  transactions   Transaction[]
+  pdcs           PDC[]
+}
+
+model Transaction {
+  id          String   @id @default(cuid())
+  customerId  String
+  customer    Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  date        DateTime @default(now())
+  description String?
+  // "debit" increases receivable, "credit" increases payable
+  type        String   @default("debit")
+  amount      Float    @default(0)
+  createdAt   DateTime @default(now())
+}
+
+model Invoice {
+  id            String    @id @default(cuid())
+  invoiceNumber String    @unique
+  customerId    String?
+  customer      Customer? @relation(fields: [customerId], references: [id])
+  customerName  String?
+  date          DateTime  @default(now())
+  dueDate       DateTime?
+  amount        Float     @default(0)
+  paidAmount    Float     @default(0)
+  status        String    @default("unpaid") // unpaid, partial, paid, overdue
+  notes         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Expense {
+  id            String   @id @default(cuid())
+  category      String   @default("general")
+  description   String
+  amount        Float    @default(0)
+  paymentMethod String   @default("cash")
+  date          DateTime @default(now())
+  isRecurring   Boolean  @default(false)
+  recurringPeriod String?
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model PDC {
+  id           String    @id @default(cuid())
+  // "receivable" or "payable"
+  pdcType      String    @default("receivable")
+  customerId   String?
+  customer     Customer? @relation(fields: [customerId], references: [id])
+  partyName    String
+  chequeNumber String?
+  bank         String?
+  amount       Float     @default(0)
+  chequeDate   DateTime?
+  status       String    @default("pending") // pending, cleared, bounced
+  remarks      String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model Settings {
+  id          String   @id @default("singleton")
+  companyName String   @default("WAHHAJ SEAFOOD Software")
+  currency    String   @default("PKR")
+  updatedAt   DateTime @updatedAt
+}
