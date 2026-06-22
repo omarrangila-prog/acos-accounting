@@ -39,7 +39,7 @@ export default function AnalyticsPage() {
 
   return (
     <div className="p-6 space-y-5 animate-enter">
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="card p-5"><p className="text-xs text-text-muted mb-1">6-Month Revenue</p><p className="text-2xl font-bold text-success">{formatCurrency(revenue6, true)}</p></div>
         <div className="card p-5"><p className="text-xs text-text-muted mb-1">6-Month Expenses</p><p className="text-2xl font-bold text-danger">{formatCurrency(expenses6, true)}</p></div>
         <div className="card p-5"><p className="text-xs text-text-muted mb-1">Net Profit (6M)</p><p className={`text-2xl font-bold ${netProfit6 >= 0 ? 'text-success' : 'text-danger'}`}>{formatCurrency(netProfit6, true)}</p></div>
@@ -64,7 +64,7 @@ export default function AnalyticsPage() {
         </ResponsiveContainer>
       </div>
 
-      <div className="grid grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <div className="card p-5">
           <p className="section-title mb-4">Net Profit by Month</p>
           <ResponsiveContainer width="100%" height={240}>

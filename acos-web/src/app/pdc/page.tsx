@@ -1,10 +1,11 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { Plus, Download, RefreshCw, Trash2, CreditCard } from 'lucide-react'
+import { Plus, Download, RefreshCw, Trash2, CreditCard, FileDown } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { api } from '@/lib/api'
 import { downloadExcel } from '@/lib/export'
+import { printTableReport, fmt } from '@/lib/print'
 import { useShell } from '@/components/AppShell'
 import { Modal, Loading, Empty } from '@/components/ui'
 import { formatCurrency, formatDate, toDateInput } from '@/lib/utils'
@@ -82,9 +83,35 @@ export default function PDCPage() {
     finally { setExporting(false) }
   }
 
+  const handlePdf = async () => {
+    setExporting(true)
+    try {
+      const data = await api.getPDC() // all records, both tabs
+      printTableReport(
+        'PDC Cheques Report',
+        [
+          { header: 'Type', key: 'type' },
+          { header: 'Party Name', key: 'partyName' },
+          { header: 'Cheque #', key: 'chequeNumber' },
+          { header: 'Bank', key: 'bank' },
+          { header: 'Cheque Date', key: 'chequeDate' },
+          { header: 'Status', key: 'status' },
+          { header: 'Amount', key: 'amount', align: 'right' },
+        ],
+        (data || []).map((p: any) => ({
+          type: p.pdcType === 'payable' ? 'Payable' : 'Receivable', partyName: p.partyName,
+          chequeNumber: p.chequeNumber || '-', bank: p.bank || '-', chequeDate: formatDate(p.chequeDate),
+          status: p.status, amount: fmt(p.amount),
+        })),
+        { total: { label: 'Total', value: fmt((data || []).reduce((s: number, p: any) => s + p.amount, 0)) } },
+      )
+    } catch { toast.error('PDF failed') }
+    finally { setExporting(false) }
+  }
+
   return (
     <div className="p-6 space-y-5 animate-enter">
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="card p-5"><p className="text-xs text-text-muted mb-1">PDC Receivable</p><p className="text-2xl font-bold text-success">{formatCurrency(totalRec, true)}</p></div>
         <div className="card p-5"><p className="text-xs text-text-muted mb-1">PDC Payable</p><p className="text-2xl font-bold text-danger">{formatCurrency(totalPay, true)}</p></div>
         <div className="card p-5"><p className="text-xs text-text-muted mb-1">Pending Receivable</p><p className="text-2xl font-bold">{pendRec}</p></div>
@@ -101,6 +128,7 @@ export default function PDCPage() {
             <button onClick={handleExport} disabled={exporting} className="btn-secondary text-xs !py-1.5">
               {exporting ? <RefreshCw size={13} className="animate-spin" /> : <Download size={13} />} Excel
             </button>
+            <button onClick={handlePdf} disabled={exporting} className="btn-secondary text-xs !py-1.5"><FileDown size={13} /> PDF</button>
             <button onClick={() => { setEditItem(null); setForm({ ...blank, pdcType: tab }); setShowAdd(true) }} className="btn-primary text-xs !py-1.5"><Plus size={13} /> Add PDC Cheque</button>
           </div>
         </div>

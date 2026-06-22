@@ -80,3 +80,25 @@
 
 .animate-enter { animation: slideUp 0.2s ease-out forwards; }
 @keyframes slideUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Responsive helpers */
+.table-scroll { @apply w-full overflow-x-auto; }
+.table-scroll > table { @apply min-w-[640px]; }
+
+/* Make all data tables horizontally scrollable on small screens.
+   Tables live inside `.card.overflow-hidden`; switch that to auto-scroll
+   and give the table a minimum width so columns never crush on mobile. */
+.card table { min-width: 640px; }
+.card.overflow-hidden:has(> table),
+.card.overflow-hidden:has(> .table-scroll) { overflow-x: auto; }
+
+/* Print layout — used by statement / report print-to-PDF */
+@media print {
+  body { overflow: visible !important; }
+  .no-print { display: none !important; }
+  .print-area { position: absolute; inset: 0; background: #fff; padding: 0; }
+}
+.print-only { display: none; }
+@media print {
+  .print-only { display: block; }
+}

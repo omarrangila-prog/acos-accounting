@@ -1,11 +1,12 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Plus, Search, Trash2, Edit, Download, RefreshCw } from 'lucide-react'
+import { Plus, Search, Trash2, Edit, Download, RefreshCw, FileDown } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
 import { api } from '@/lib/api'
 import { downloadExcel } from '@/lib/export'
+import { printTableReport, fmt } from '@/lib/print'
 import { useShell } from '@/components/AppShell'
 import { Modal, Loading, Empty } from '@/components/ui'
 import {
@@ -103,9 +104,32 @@ export default function ExpensesPage() {
     finally { setExporting(false) }
   }
 
+  const handlePdf = async () => {
+    setExporting(true)
+    try {
+      const all = await api.getExpenses() // all records, not just visible
+      printTableReport(
+        'Expenses Report',
+        [
+          { header: 'Date', key: 'date' },
+          { header: 'Category', key: 'category' },
+          { header: 'Description', key: 'description' },
+          { header: 'Payment', key: 'payment' },
+          { header: 'Amount', key: 'amount', align: 'right' },
+        ],
+        (all || []).map((e: any) => ({
+          date: formatDate(e.date), category: expenseCategoryLabel(e.category),
+          description: e.description, payment: paymentMethodLabel(e.paymentMethod), amount: fmt(e.amount),
+        })),
+        { total: { label: 'Total', value: fmt((all || []).reduce((s: number, e: any) => s + e.amount, 0)) } },
+      )
+    } catch { toast.error('PDF failed') }
+    finally { setExporting(false) }
+  }
+
   return (
     <div className="p-6 space-y-5 animate-enter">
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="card p-5"><p className="text-xs text-text-muted mb-1">Total Expenses</p><p className="text-2xl font-bold text-danger">{formatCurrency(total)}</p></div>
         <div className="card p-5"><p className="text-xs text-text-muted mb-1">Recurring</p><p className="text-2xl font-bold text-warning">{formatCurrency(recurring)}</p></div>
         <div className="card p-5"><p className="text-xs text-text-muted mb-1">Total Records</p><p className="text-2xl font-bold">{expenses.length}</p></div>
@@ -140,6 +164,7 @@ export default function ExpensesPage() {
             <button onClick={handleExport} disabled={exporting} className="btn-secondary text-xs !py-1.5">
               {exporting ? <RefreshCw size={13} className="animate-spin" /> : <Download size={13} />} Excel
             </button>
+            <button onClick={handlePdf} disabled={exporting} className="btn-secondary text-xs !py-1.5"><FileDown size={13} /> PDF</button>
             <button onClick={() => { setEditItem(null); setForm({ ...blank }); setShowAdd(true) }} className="btn-primary text-xs !py-1.5"><Plus size={13} /> Add Expense</button>
           </div>
         </div>

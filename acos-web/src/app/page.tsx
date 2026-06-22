@@ -38,7 +38,7 @@ export default function DashboardPage() {
 
   return (
     <div className="p-6 space-y-5 animate-enter">
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {cards.map((c) => (
           <div key={c.label} className="card p-5">
             <div className="flex items-start justify-between">
@@ -51,7 +51,7 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {small.map((c) => (
           <div key={c.label} className="card p-5">
             <p className="text-xs text-text-muted mb-1">{c.label}</p>
@@ -60,7 +60,7 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      <div className="grid grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <div className="card p-5">
           <p className="section-title mb-4">Revenue vs Expenses (6 Months)</p>
           <ResponsiveContainer width="100%" height={240}>

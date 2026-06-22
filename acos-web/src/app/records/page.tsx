@@ -1,13 +1,14 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Search, RefreshCw, Download } from 'lucide-react'
+import { Search, RefreshCw, Download, FileDown } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { api } from '@/lib/api'
 import { downloadExcel } from '@/lib/export'
 import { useShell } from '@/components/AppShell'
 import { Loading, Empty } from '@/components/ui'
 import { formatCurrency, formatDateTime } from '@/lib/utils'
+import { printTableReport, fmt } from '@/lib/print'
 
 const MODULE_BADGE: Record<string, string> = {
   invoice: 'badge-accent', expense: 'badge-danger', pdc_payable: 'badge-warning', pdc_receivable: 'badge-success',
@@ -67,9 +68,27 @@ export default function RecordsPage() {
     finally { setExporting(false) }
   }
 
+  const handlePdf = () => {
+    printTableReport(
+      'All Records',
+      [
+        { header: 'Date', key: 'date' },
+        { header: 'Module', key: 'module' },
+        { header: 'Title / Reference', key: 'title' },
+        { header: 'Customer / Vendor', key: 'party' },
+        { header: 'Status', key: 'status' },
+        { header: 'Amount', key: 'amount', align: 'right' },
+      ],
+      (data.records || []).map((r: any) => {
+        const dt = formatDateTime(r.date)
+        return { date: `${dt.date} ${dt.time}`, module: r.module, title: r.title, party: r.party, status: r.status, amount: fmt(r.amount) }
+      }),
+    )
+  }
+
   return (
     <div className="p-6 space-y-5 animate-enter">
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="card p-5"><p className="text-xs text-text-muted mb-1">Total Records</p><p className="text-2xl font-bold">{data.counts.total}</p></div>
         <div className="card p-5"><p className="text-xs text-text-muted mb-1">Invoices</p><p className="text-2xl font-bold text-accent">{data.counts.invoices}</p></div>
         <div className="card p-5"><p className="text-xs text-text-muted mb-1">Expenses</p><p className="text-2xl font-bold text-danger">{data.counts.expenses}</p></div>
@@ -79,9 +98,12 @@ export default function RecordsPage() {
       <div className="card p-4">
         <div className="flex items-center justify-between mb-3">
           <p className="section-title">Records by Module</p>
+          <div className="flex items-center gap-2">
           <button onClick={handleExport} disabled={exporting} className="btn-secondary text-xs !py-1.5">
             {exporting ? <RefreshCw size={13} className="animate-spin" /> : <Download size={13} />} Excel
           </button>
+          <button onClick={handlePdf} className="btn-secondary text-xs !py-1.5"><FileDown size={13} /> PDF</button>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           {tabs.map((t) => (

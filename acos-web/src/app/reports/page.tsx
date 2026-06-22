@@ -1,12 +1,13 @@
 'use client'
 
 import { useState } from 'react'
-import { FileText, Play, Download, RefreshCw } from 'lucide-react'
+import { FileText, Play, Download, RefreshCw, FileDown, Printer } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { api } from '@/lib/api'
 import { downloadExcel } from '@/lib/export'
 import { Loading } from '@/components/ui'
 import { formatCurrency, formatDate } from '@/lib/utils'
+import { printTableReport, fmt } from '@/lib/print'
 
 const TYPES = [
   { value: 'pnl', label: 'Profit & Loss' },
@@ -61,6 +62,32 @@ export default function ReportsPage() {
     finally { setExporting(false) }
   }
 
+  const handlePdf = () => {
+    if (!report) return
+    const sub = `${formatDate(from)} — ${formatDate(to)}`
+    let columns: any[] = [], rows: any[] = [], total: any = undefined
+    if (type === 'pnl') {
+      columns = [{ header: 'Item', key: 'label' }, { header: 'Amount', key: 'value', align: 'right' }]
+      rows = report.rows.map((r: any) => ({ label: r.label, value: fmt(r.value) }))
+    } else if (type === 'expenses') {
+      columns = [{ header: 'Date', key: 'date' }, { header: 'Category', key: 'category' }, { header: 'Description', key: 'description' }, { header: 'Amount', key: 'amount', align: 'right' }]
+      rows = report.rows.map((r: any) => ({ date: formatDate(r.date), category: r.category, description: r.description, amount: fmt(r.amount) }))
+      total = { label: 'Total', value: fmt(report.total) }
+    } else if (type === 'receivables' || type === 'payables') {
+      columns = [{ header: 'Party', key: 'name' }, { header: 'Phone', key: 'phone' }, { header: 'Balance', key: 'balance', align: 'right' }]
+      rows = report.rows.map((r: any) => ({ name: r.name, phone: r.phone || '-', balance: fmt(Math.abs(r.balance)) }))
+      total = { label: 'Total', value: fmt(report.total) }
+    } else if (type === 'pdc') {
+      columns = [{ header: 'Party', key: 'partyName' }, { header: 'Cheque #', key: 'chequeNumber' }, { header: 'Bank', key: 'bank' }, { header: 'Status', key: 'status' }, { header: 'Amount', key: 'amount', align: 'right' }]
+      rows = report.rows.map((r: any) => ({ partyName: r.partyName, chequeNumber: r.chequeNumber || '-', bank: r.bank || '-', status: r.status, amount: fmt(r.amount) }))
+      total = { label: 'Total', value: fmt(report.total) }
+    } else if (type === 'ledger') {
+      columns = [{ header: 'Party', key: 'name' }, { header: 'Transactions', key: 'txns' }, { header: 'Balance', key: 'balance', align: 'right' }]
+      rows = report.rows.map((r: any) => ({ name: r.name, txns: r.txns, balance: fmt(Math.abs(r.balance)) }))
+    }
+    printTableReport(report.title, columns, rows, { subtitle: sub, total })
+  }
+
   return (
     <div className="p-6 space-y-5 animate-enter">
       <div className="card p-5">
@@ -90,9 +117,13 @@ export default function ReportsPage() {
                 <h3 className="text-lg font-bold text-text-primary">{report.title}</h3>
                 <p className="text-xs text-text-muted">{formatDate(from)} — {formatDate(to)}</p>
               </div>
-              <button onClick={handleExport} disabled={exporting} className="btn-secondary">
-                {exporting ? <RefreshCw size={16} className="animate-spin" /> : <Download size={16} />} Excel
-              </button>
+              <div className="flex items-center gap-2">
+                <button onClick={handleExport} disabled={exporting} className="btn-secondary">
+                  {exporting ? <RefreshCw size={16} className="animate-spin" /> : <Download size={16} />} Excel
+                </button>
+                <button onClick={handlePdf} className="btn-secondary"><FileDown size={16} /> PDF</button>
+                <button onClick={handlePdf} className="btn-secondary"><Printer size={16} /> Print</button>
+              </div>
             </div>
             <ReportBody type={type} report={report} />
           </div>

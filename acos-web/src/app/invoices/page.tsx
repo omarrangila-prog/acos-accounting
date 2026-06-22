@@ -1,10 +1,11 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { Plus, Search, Trash2, Edit, Download, RefreshCw } from 'lucide-react'
+import { Plus, Search, Trash2, Edit, Download, RefreshCw, FileDown } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { api } from '@/lib/api'
 import { downloadExcel } from '@/lib/export'
+import { printTableReport, fmt } from '@/lib/print'
 import { useShell } from '@/components/AppShell'
 import { Modal, Loading, Empty } from '@/components/ui'
 import { formatCurrency, formatDate, toDateInput } from '@/lib/utils'
@@ -75,9 +76,34 @@ export default function InvoicesPage() {
     finally { setExporting(false) }
   }
 
+  const handlePdf = async () => {
+    setExporting(true)
+    try {
+      const all = await api.getInvoices() // all records
+      printTableReport(
+        'Invoices Report',
+        [
+          { header: 'Invoice #', key: 'invoiceNumber' },
+          { header: 'Customer', key: 'customerName' },
+          { header: 'Date', key: 'date' },
+          { header: 'Due', key: 'dueDate' },
+          { header: 'Status', key: 'status' },
+          { header: 'Paid', key: 'paid', align: 'right' },
+          { header: 'Amount', key: 'amount', align: 'right' },
+        ],
+        (all || []).map((i: any) => ({
+          invoiceNumber: i.invoiceNumber, customerName: i.customerName || '-', date: formatDate(i.date),
+          dueDate: formatDate(i.dueDate), status: i.status, paid: fmt(i.paidAmount), amount: fmt(i.amount),
+        })),
+        { total: { label: 'Total Billed', value: fmt((all || []).reduce((s: number, i: any) => s + i.amount, 0)) } },
+      )
+    } catch { toast.error('PDF failed') }
+    finally { setExporting(false) }
+  }
+
   return (
     <div className="p-6 space-y-5 animate-enter">
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="card p-5"><p className="text-xs text-text-muted mb-1">Total Invoices</p><p className="text-2xl font-bold">{invoices.length}</p></div>
         <div className="card p-5"><p className="text-xs text-text-muted mb-1">Total Billed</p><p className="text-2xl font-bold text-accent">{formatCurrency(totalBilled, true)}</p></div>
         <div className="card p-5"><p className="text-xs text-text-muted mb-1">Total Collected</p><p className="text-2xl font-bold text-success">{formatCurrency(totalCollected, true)}</p></div>
@@ -99,6 +125,7 @@ export default function InvoicesPage() {
             <button onClick={handleExport} disabled={exporting} className="btn-secondary text-xs !py-1.5">
               {exporting ? <RefreshCw size={13} className="animate-spin" /> : <Download size={13} />} Excel
             </button>
+            <button onClick={handlePdf} disabled={exporting} className="btn-secondary text-xs !py-1.5"><FileDown size={13} /> PDF</button>
             <button onClick={() => { setEditItem(null); setForm({ ...blank }); setShowAdd(true) }} className="btn-primary text-xs !py-1.5"><Plus size={13} /> Create Invoice</button>
           </div>
         </div>

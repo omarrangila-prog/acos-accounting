@@ -8,6 +8,8 @@ import { downloadExcel } from '@/lib/export'
 import { useShell } from '@/components/AppShell'
 import { Modal, Loading, Empty } from '@/components/ui'
 import { formatCurrency, formatDate } from '@/lib/utils'
+import { printHtml, fmt, COMPANY_NAME } from '@/lib/print'
+import { FileDown } from 'lucide-react'
 
 const blankCust = { name: '', phone: '', address: '', openingBalance: '', balanceType: 'debit' }
 const blankTxn = { customerId: '', type: 'debit', amount: '', description: '', date: new Date().toISOString().split('T')[0] }
@@ -24,6 +26,8 @@ export default function CustomersPage() {
   const [custForm, setCustForm] = useState({ ...blankCust })
   const [txnForm, setTxnForm] = useState({ ...blankTxn })
   const [ledger, setLedger] = useState<any>(null) // selected customer detail
+  const [stmtFrom, setStmtFrom] = useState('')
+  const [stmtTo, setStmtTo] = useState('')
 
   const load = useCallback(() => {
     setLoading(true)
@@ -97,60 +101,153 @@ export default function CustomersPage() {
 
   const handlePrint = () => window.print()
 
-  // ---- Ledger detail view ----
+  // ---- Customer statement / ledger detail view ----
   if (ledger) {
     const opening = ledger.balanceType === 'credit' ? -ledger.openingBalance : ledger.openingBalance
+
+    // Apply date-range filter to transactions (inclusive). Opening balance always shows first.
+    const fromD = stmtFrom ? new Date(stmtFrom) : null
+    const toD = stmtTo ? new Date(stmtTo + 'T23:59:59') : null
+    const inRange = (d: any) => { const x = new Date(d); return (!fromD || x >= fromD) && (!toD || x <= toD) }
+    const txns = (ledger.transactions || []).filter((t: any) => inRange(t.date))
+
+    // Build rows with running balance. Debit increases receivable (+), credit increases payable (-).
     let running = opening
+    const rows = txns.map((t: any) => {
+      running += t.type === 'credit' ? -t.amount : t.amount
+      return { ...t, balance: running }
+    })
+    const totalDebit = txns.filter((t: any) => t.type === 'debit').reduce((s: number, t: any) => s + t.amount, 0)
+    const totalCredit = txns.filter((t: any) => t.type === 'credit').reduce((s: number, t: any) => s + t.amount, 0)
+    const netBalance = running
+    const statusLabel = netBalance > 0 ? 'Debit — Receivable' : netBalance < 0 ? 'Credit — Payable' : 'Settled'
+
+    const rangeText = (fromD || toD)
+      ? `${stmtFrom ? formatDate(stmtFrom) : 'Start'} — ${stmtTo ? formatDate(stmtTo) : 'Today'}`
+      : 'All Transactions'
+
+    const statementExcel = async () => {
+      await downloadExcel(
+        `Statement_${ledger.name.replace(/[^a-z0-9]/gi, '_')}.xlsx`,
+        'Statement',
+        [
+          { header: 'Date', key: 'date', width: 14 },
+          { header: 'Tafseel / Description', key: 'desc', width: 34 },
+          { header: 'Debit (-)', key: 'debit', width: 16 },
+          { header: 'Credit (+)', key: 'credit', width: 16 },
+          { header: 'Balance', key: 'balance', width: 18 },
+        ],
+        [
+          { date: formatDate(ledger.createdAt), desc: 'Opening Balance', debit: opening > 0 ? opening : 0, credit: opening < 0 ? -opening : 0, balance: Math.abs(opening) },
+          ...rows.map((r: any) => ({
+            date: formatDate(r.date), desc: r.description || '-',
+            debit: r.type === 'debit' ? r.amount : 0, credit: r.type === 'credit' ? r.amount : 0,
+            balance: Math.abs(r.balance),
+          })),
+          { date: '', desc: 'TOTAL', debit: totalDebit, credit: totalCredit, balance: Math.abs(netBalance) },
+        ],
+      )
+      toast.success('Exported')
+    }
+
+    const statementPdf = () => {
+      const rowHtml = [
+        `<tr class="opening"><td>${formatDate(ledger.createdAt)}</td><td>Opening Balance</td><td class="r">${opening > 0 ? fmt(opening) : '-'}</td><td class="r">${opening < 0 ? fmt(-opening) : '-'}</td><td class="r">${fmt(Math.abs(opening))}</td></tr>`,
+        ...rows.map((r: any) => `<tr><td>${formatDate(r.date)}</td><td>${(r.description || '-')}</td><td class="r red">${r.type === 'debit' ? fmt(r.amount) : '-'}</td><td class="r green">${r.type === 'credit' ? fmt(r.amount) : '-'}</td><td class="r">${fmt(Math.abs(r.balance))}</td></tr>`),
+      ].join('')
+      printHtml(`Statement - ${ledger.name}`, `
+        <div class="rpt-header">
+          <div><div class="rpt-company">${COMPANY_NAME}</div><div class="rpt-sub">Accounting Software · Customer Statement</div></div>
+          <div><div class="rpt-title">Account Statement</div><div class="rpt-meta">${rangeText}</div></div>
+        </div>
+        <div class="rpt-info">
+          <div><span class="lbl">Customer:</span> <b>${ledger.name}</b></div>
+          <div><span class="lbl">Phone:</span> <b>${ledger.phone || '—'}</b></div>
+          <div><span class="lbl">Address:</span> <b>${ledger.address || '—'}</b></div>
+        </div>
+        <div class="summary">
+          <div class="box"><div class="k">Total Debit</div><div class="v red">${fmt(totalDebit)}</div></div>
+          <div class="box"><div class="k">Total Credit</div><div class="v green">${fmt(totalCredit)}</div></div>
+          <div class="box"><div class="k">Net Balance</div><div class="v ${netBalance >= 0 ? 'red' : 'green'}">${fmt(Math.abs(netBalance))}</div></div>
+          <div class="box"><div class="k">Status</div><div class="v blue" style="font-size:13px">${statusLabel}</div></div>
+        </div>
+        <table>
+          <thead><tr><th>Date</th><th>Tafseel / Description</th><th class="r">Debit (-)</th><th class="r">Credit (+)</th><th class="r">Balance</th></tr></thead>
+          <tbody>${rowHtml}</tbody>
+          <tfoot><tr><td colspan="2">TOTAL</td><td class="r red">${fmt(totalDebit)}</td><td class="r green">${fmt(totalCredit)}</td><td class="r">${fmt(Math.abs(netBalance))}</td></tr></tfoot>
+        </table>`)
+    }
+
     return (
-      <div className="p-6 space-y-5 animate-enter">
-        <button onClick={() => setLedger(null)} className="btn-ghost !px-2 mb-1"><ArrowLeft size={16} /> Back to All Parties</button>
-        <div className="card p-5 flex items-center justify-between">
+      <div className="p-4 md:p-6 space-y-5 animate-enter">
+        <button onClick={() => { setLedger(null); setStmtFrom(''); setStmtTo('') }} className="btn-ghost !px-2"><ArrowLeft size={16} /> Back to All Parties</button>
+
+        {/* Statement controls */}
+        <div className="card p-4 md:p-5 flex flex-col md:flex-row md:items-end gap-3 md:justify-between">
           <div>
             <h2 className="text-xl font-bold text-text-primary">{ledger.name}</h2>
             <p className="text-sm text-text-muted">{ledger.phone || '—'} · {ledger.address || '—'}</p>
           </div>
-          <div className="text-right">
-            <p className="text-xs text-text-muted">Current Balance</p>
-            <p className={`text-2xl font-bold ${running >= 0 ? 'text-danger' : 'text-success'}`}>{formatCurrency(Math.abs(running))}</p>
+          <div className="flex flex-wrap items-end gap-2">
+            <div><label className="label">From</label><input type="date" className="input !py-1.5 text-xs" value={stmtFrom} onChange={(e) => setStmtFrom(e.target.value)} /></div>
+            <div><label className="label">To</label><input type="date" className="input !py-1.5 text-xs" value={stmtTo} onChange={(e) => setStmtTo(e.target.value)} /></div>
+            <button onClick={statementExcel} className="btn-secondary text-xs !py-2"><Download size={14} /> Excel</button>
+            <button onClick={statementPdf} className="btn-secondary text-xs !py-2"><FileDown size={14} /> PDF</button>
+            <button onClick={statementPdf} className="btn-secondary text-xs !py-2"><Printer size={14} /> Print</button>
           </div>
         </div>
+
+        {/* Summary cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="card p-5"><p className="text-[11px] font-semibold text-danger mb-1">TOTAL DEBIT</p><p className="text-2xl font-bold text-danger">{formatCurrency(totalDebit)}</p></div>
+          <div className="card p-5"><p className="text-[11px] font-semibold text-success mb-1">TOTAL CREDIT</p><p className="text-2xl font-bold text-success">{formatCurrency(totalCredit)}</p></div>
+          <div className="card p-5"><p className="text-[11px] font-semibold text-text-muted mb-1">NET BALANCE</p><p className={`text-2xl font-bold ${netBalance >= 0 ? 'text-danger' : 'text-success'}`}>{formatCurrency(Math.abs(netBalance))}</p></div>
+          <div className="card p-5"><p className="text-[11px] font-semibold text-text-muted mb-1">STATUS</p><span className={`badge ${netBalance > 0 ? 'badge-danger' : netBalance < 0 ? 'badge-success' : 'badge-neutral'} mt-1`}>{statusLabel}</span></div>
+        </div>
+
         <div className="card overflow-hidden">
           <div className="flex items-center justify-between px-5 py-3 border-b border-border">
-            <p className="section-title">Ledger Statement</p>
+            <p className="section-title">Statement · <span className="text-text-muted font-normal text-sm">{rangeText}</span></p>
             <button onClick={() => { setTxnForm({ ...blankTxn, customerId: ledger.id }); setShowTxn(true) }} className="btn-primary text-xs !py-1.5"><Plus size={13} /> Add Transaction</button>
           </div>
           <table className="w-full">
             <thead><tr className="border-b border-border bg-surface-1">
               <th className="text-left px-5 py-3 table-header">Date</th>
-              <th className="text-left px-5 py-3 table-header">Description</th>
-              <th className="text-right px-5 py-3 table-header">Debit</th>
-              <th className="text-right px-5 py-3 table-header">Credit</th>
+              <th className="text-left px-5 py-3 table-header">Tafseel / Description</th>
+              <th className="text-right px-5 py-3 table-header">Debit (-)</th>
+              <th className="text-right px-5 py-3 table-header">Credit (+)</th>
               <th className="text-right px-5 py-3 table-header">Balance</th>
             </tr></thead>
             <tbody>
-              <tr className="border-b border-border/50">
+              <tr className="border-b border-border/50 bg-surface-1/60">
                 <td className="px-5 py-3 text-sm text-text-secondary">{formatDate(ledger.createdAt)}</td>
                 <td className="px-5 py-3 text-sm text-text-muted italic">Opening Balance</td>
                 <td className="px-5 py-3 text-right text-sm">{opening > 0 ? formatCurrency(opening) : '-'}</td>
                 <td className="px-5 py-3 text-right text-sm">{opening < 0 ? formatCurrency(-opening) : '-'}</td>
                 <td className="px-5 py-3 text-right text-sm font-medium">{formatCurrency(Math.abs(opening))}</td>
               </tr>
-              {ledger.transactions.map((t: any) => {
-                running += t.type === 'credit' ? -t.amount : t.amount
-                return (
-                  <tr key={t.id} className="border-b border-border/50 hover:bg-surface-1/50">
-                    <td className="px-5 py-3 text-sm text-text-secondary">{formatDate(t.date)}</td>
-                    <td className="px-5 py-3 text-sm text-text-primary">{t.description || '-'}</td>
-                    <td className="px-5 py-3 text-right text-sm text-danger">{t.type === 'debit' ? formatCurrency(t.amount) : '-'}</td>
-                    <td className="px-5 py-3 text-right text-sm text-success">{t.type === 'credit' ? formatCurrency(t.amount) : '-'}</td>
-                    <td className="px-5 py-3 text-right text-sm font-medium">{formatCurrency(Math.abs(running))}</td>
-                  </tr>
-                )
-              })}
+              {rows.map((r: any) => (
+                <tr key={r.id} className="border-b border-border/50 hover:bg-surface-1/50">
+                  <td className="px-5 py-3 text-sm text-text-secondary">{formatDate(r.date)}</td>
+                  <td className="px-5 py-3 text-sm text-text-primary">{r.description || '-'}</td>
+                  <td className="px-5 py-3 text-right text-sm text-danger">{r.type === 'debit' ? formatCurrency(r.amount) : '-'}</td>
+                  <td className="px-5 py-3 text-right text-sm text-success">{r.type === 'credit' ? formatCurrency(r.amount) : '-'}</td>
+                  <td className="px-5 py-3 text-right text-sm font-medium">{formatCurrency(Math.abs(r.balance))}</td>
+                </tr>
+              ))}
             </tbody>
+            <tfoot>
+              <tr className="bg-surface-1 font-bold">
+                <td className="px-5 py-3 text-sm" colSpan={2}>TOTAL</td>
+                <td className="px-5 py-3 text-right text-sm text-danger">{formatCurrency(totalDebit)}</td>
+                <td className="px-5 py-3 text-right text-sm text-success">{formatCurrency(totalCredit)}</td>
+                <td className="px-5 py-3 text-right text-sm">{formatCurrency(Math.abs(netBalance))}</td>
+              </tr>
+            </tfoot>
           </table>
-          {ledger.transactions.length === 0 && <Empty title="No transactions yet" />}
+          {rows.length === 0 && <Empty title="No transactions in this date range" />}
         </div>
+
         <Modal open={showTxn} onClose={() => setShowTxn(false)} title="Add Transaction">
           <TxnFields form={txnForm} setForm={setTxnForm} customers={customers} lockParty />
           <div className="flex justify-end gap-2 pt-3">
@@ -179,7 +276,7 @@ export default function CustomersPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="card p-5"><p className="text-xs text-text-muted mb-1">Total Parties</p><p className="text-2xl font-bold">{customers.length}</p></div>
         <div className="card p-5"><p className="text-[11px] font-semibold text-danger mb-1">TOTAL DEBIT</p><p className="text-2xl font-bold text-danger">{formatCurrency(totalDebit)}</p><p className="text-xs text-text-muted">All receivables</p></div>
         <div className="card p-5"><p className="text-[11px] font-semibold text-success mb-1">TOTAL CREDIT</p><p className="text-2xl font-bold text-success">{formatCurrency(totalCredit)}</p><p className="text-xs text-text-muted">All payables</p></div>
