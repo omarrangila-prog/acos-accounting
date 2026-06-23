@@ -168,6 +168,11 @@ export default function CustomersPage() {
   if (ledger) {
     const opening = ledger.balanceType === 'credit' ? -ledger.openingBalance : ledger.openingBalance
 
+    // Most recent transaction (by date) for the CRM "Last Transaction" field.
+    const lastTxn = (ledger.transactions || []).slice().sort(
+      (a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+    )[0]
+
     // Apply date-range filter to transactions (inclusive). Opening balance always shows first.
     const fromD = stmtFrom ? new Date(stmtFrom) : null
     const toD = stmtTo ? new Date(stmtTo + 'T23:59:59') : null
@@ -245,18 +250,45 @@ export default function CustomersPage() {
       <div className="p-4 md:p-6 space-y-5 animate-enter">
         <button onClick={() => { setLedger(null); setStmtFrom(''); setStmtTo('') }} className="btn-ghost !px-2"><ArrowLeft size={16} /> Back to All Parties</button>
 
-        {/* Statement controls */}
-        <div className="card p-4 md:p-5 flex flex-col md:flex-row md:items-end gap-3 md:justify-between">
-          <div>
-            <h2 className="text-xl font-bold text-text-primary">{ledger.name}</h2>
-            <p className="text-sm text-text-muted">{ledger.phone || '—'} · {ledger.address || '—'}</p>
+        {/* CRM-style customer header */}
+        <div className="card p-4 md:p-5 space-y-4">
+          <div className="flex flex-col md:flex-row md:items-start gap-3 md:justify-between">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-12 h-12 shrink-0 rounded-2xl bg-accent-light text-accent flex items-center justify-center text-lg font-bold">
+                {ledger.name?.charAt(0)?.toUpperCase() || '?'}
+              </div>
+              <div className="min-w-0">
+                <h2 className="text-xl font-bold text-text-primary truncate">{ledger.name}</h2>
+                <p className="text-sm text-text-muted truncate">{ledger.phone || '—'} · {ledger.address || '—'}</p>
+              </div>
+            </div>
+            <div className="text-left md:text-right">
+              <p className="text-[11px] font-semibold text-text-muted uppercase tracking-wide">Current Balance</p>
+              <p className={`text-2xl font-bold ${netBalance >= 0 ? 'text-danger' : 'text-success'}`}>{formatCurrency(Math.abs(netBalance))}</p>
+              <span className={`badge ${netBalance > 0 ? 'badge-danger' : netBalance < 0 ? 'badge-success' : 'badge-neutral'}`}>{statusLabel}</span>
+            </div>
           </div>
-          <div className="flex flex-wrap items-end gap-2">
-            <div><label className="label">From</label><input type="date" className="input !py-1.5 text-xs" value={stmtFrom} onChange={(e) => setStmtFrom(e.target.value)} /></div>
-            <div><label className="label">To</label><input type="date" className="input !py-1.5 text-xs" value={stmtTo} onChange={(e) => setStmtTo(e.target.value)} /></div>
-            <button onClick={statementExcel} className="btn-secondary text-xs !py-2"><Download size={14} /> Excel</button>
-            <button onClick={statementPdf} className="btn-secondary text-xs !py-2"><FileDown size={14} /> PDF</button>
-            <button onClick={statementPdf} className="btn-secondary text-xs !py-2"><Printer size={14} /> Print</button>
+
+          {/* Quick CRM facts */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm border-t border-border pt-3">
+            <div><p className="text-[11px] text-text-muted uppercase tracking-wide">Opening Balance</p><p className="font-semibold">{formatCurrency(Math.abs(opening))} <span className="text-xs font-normal text-text-muted">{opening >= 0 ? 'Dr' : 'Cr'}</span></p></div>
+            <div><p className="text-[11px] text-text-muted uppercase tracking-wide">Last Transaction</p><p className="font-semibold">{lastTxn ? `${formatDate(lastTxn.date)}` : '—'}</p>{lastTxn && <p className="text-xs text-text-muted">{lastTxn.type === 'debit' ? 'Debit' : 'Credit'} {formatCurrency(lastTxn.amount)}</p>}</div>
+            <div><p className="text-[11px] text-text-muted uppercase tracking-wide">Total Entries</p><p className="font-semibold">{(ledger.transactions || []).length}</p></div>
+          </div>
+
+          {/* Actions + date range */}
+          <div className="flex flex-col sm:flex-row sm:items-end gap-3 sm:justify-between border-t border-border pt-3">
+            <div className="flex flex-wrap items-end gap-2">
+              <div><label className="label">From</label><input type="date" className="input !py-1.5 text-xs" value={stmtFrom} onChange={(e) => setStmtFrom(e.target.value)} /></div>
+              <div><label className="label">To</label><input type="date" className="input !py-1.5 text-xs" value={stmtTo} onChange={(e) => setStmtTo(e.target.value)} /></div>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <button onClick={() => openAddTxnFor(ledger.id)} className="btn-secondary text-xs !py-2"><PlusCircle size={14} /> Add Txn</button>
+              <button onClick={() => openEditCust(ledger)} className="btn-secondary text-xs !py-2"><Pencil size={14} /> Edit</button>
+              <button onClick={statementExcel} className="btn-secondary text-xs !py-2"><Download size={14} /> Excel</button>
+              <button onClick={statementPdf} className="btn-secondary text-xs !py-2"><FileDown size={14} /> PDF</button>
+              <button onClick={statementPdf} className="btn-secondary text-xs !py-2"><Printer size={14} /> Print</button>
+            </div>
           </div>
         </div>
 
