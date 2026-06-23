@@ -89,6 +89,19 @@ export default function CustomersPage() {
     catch (e: any) { toast.error(e.message || 'Failed') }
   }
 
+  // Row-level "Download Statement": fetch the customer's full ledger and export
+  // the same Excel statement as the detail view (all transactions, not visible only).
+  const [downloadingId, setDownloadingId] = useState<string | null>(null)
+  const downloadStatementRow = async (id: string) => {
+    setDownloadingId(id)
+    try {
+      const cust = await api.getCustomer(id)
+      await exportStatementExcel(cust)
+      toast.success('Statement exported')
+    } catch { toast.error('Export failed') }
+    finally { setDownloadingId(null) }
+  }
+
   const openLedger = async (id: string) => {
     try { setLedger(await api.getCustomer(id)) } catch { toast.error('Failed to load ledger') }
   }
@@ -349,6 +362,7 @@ export default function CustomersPage() {
                       <button onClick={() => openLedger(c.id)} title="View statement" className="btn-ghost !px-2 !py-1.5"><Eye size={15} /></button>
                       <button onClick={() => openAddTxnFor(c.id)} title="Add transaction" className="btn-ghost !px-2 !py-1.5 text-accent"><PlusCircle size={15} /></button>
                       <button onClick={() => openEditCust(c)} title="Edit customer" className="btn-ghost !px-2 !py-1.5"><Pencil size={15} /></button>
+                      <button onClick={() => downloadStatementRow(c.id)} disabled={downloadingId === c.id} title="Download statement (Excel)" className="btn-ghost !px-2 !py-1.5">{downloadingId === c.id ? <RefreshCw size={15} className="animate-spin" /> : <Download size={15} />}</button>
                       <button onClick={() => removeCust(c.id)} title="Delete customer" className="btn-ghost !px-2 !py-1.5 text-danger"><Trash2 size={15} /></button>
                     </div>
                   </td>
@@ -412,5 +426,39 @@ function TxnFields({ form, setForm, customers, lockParty }: any) {
       <div><label className="label">Date</label><input type="date" className="input" value={form.date} onChange={(e) => setForm((p: any) => ({ ...p, date: e.target.value }))} /></div>
       <div><label className="label">Description</label><input className="input" value={form.description} onChange={(e) => setForm((p: any) => ({ ...p, description: e.target.value }))} /></div>
     </div>
+  )
+}
+
+// Shared: export a customer's full ledger statement to Excel (all transactions,
+// opening balance first, running balance + totals). Used by the row-level
+// "Download Statement" action. Mirrors the in-statement Excel export.
+async function exportStatementExcel(cust: any) {
+  const opening = cust.balanceType === 'credit' ? -cust.openingBalance : cust.openingBalance
+  let running = opening
+  const rows = (cust.transactions || []).map((t: any) => {
+    running += t.type === 'credit' ? -t.amount : t.amount
+    return { ...t, balance: running }
+  })
+  const totalDebit = (cust.transactions || []).filter((t: any) => t.type === 'debit').reduce((s: number, t: any) => s + t.amount, 0)
+  const totalCredit = (cust.transactions || []).filter((t: any) => t.type === 'credit').reduce((s: number, t: any) => s + t.amount, 0)
+  await downloadExcel(
+    `Statement_${cust.name.replace(/[^a-z0-9]/gi, '_')}.xlsx`,
+    'Statement',
+    [
+      { header: 'Date', key: 'date', width: 14 },
+      { header: 'Tafseel / Description', key: 'desc', width: 34 },
+      { header: 'Debit (-)', key: 'debit', width: 16 },
+      { header: 'Credit (+)', key: 'credit', width: 16 },
+      { header: 'Balance', key: 'balance', width: 18 },
+    ],
+    [
+      { date: formatDate(cust.createdAt), desc: 'Opening Balance', debit: opening > 0 ? opening : 0, credit: opening < 0 ? -opening : 0, balance: Math.abs(opening) },
+      ...rows.map((r: any) => ({
+        date: formatDate(r.date), desc: r.description || '-',
+        debit: r.type === 'debit' ? r.amount : 0, credit: r.type === 'credit' ? r.amount : 0,
+        balance: Math.abs(r.balance),
+      })),
+      { date: '', desc: 'TOTAL', debit: totalDebit, credit: totalCredit, balance: Math.abs(running) },
+    ],
   )
 }

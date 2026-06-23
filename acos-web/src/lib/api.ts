@@ -23,6 +23,7 @@ export const api = {
   getCustomers: (search?: string) => j(`/api/customers${search ? `?search=${encodeURIComponent(search)}` : ''}`),
   getCustomer: (id: string) => j(`/api/customers/${id}`),
   addCustomer: (d: any) => j('/api/customers', body(d)),
+  importCustomers: (rows: any[]) => j('/api/customers/import', body({ customers: rows })),
   updateCustomer: (id: string, d: any) => j(`/api/customers/${id}`, put(d)),
   deleteCustomer: (id: string) => j(`/api/customers/${id}`, del),
   addTransaction: (d: any) => j('/api/transactions', body(d)),
