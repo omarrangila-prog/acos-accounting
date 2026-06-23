@@ -1,11 +1,17 @@
-// One-time customer import seed.
-// Usage (against Railway or local):  DATABASE_URL=... node prisma/seed-customers.mjs
+// One-time customer import seed (Turso / libSQL).
+// Usage:
+//   TURSO_DATABASE_URL=libsql://... TURSO_AUTH_TOKEN=... node prisma/seed-customers.mjs
 //
 // Idempotent by name: existing customers are updated, not duplicated.
 // Opening balance is stored on the Customer and shown as the first ledger row
 // by the statement. balanceType "debit" = receivable, "credit" = payable.
 import { PrismaClient } from '@prisma/client'
-const prisma = new PrismaClient()
+import { PrismaLibSQL } from '@prisma/adapter-libsql'
+
+const url = process.env.TURSO_DATABASE_URL || process.env.DATABASE_URL || 'file:./prisma/dev.db'
+const authToken = process.env.TURSO_AUTH_TOKEN
+const adapter = new PrismaLibSQL({ url, authToken })
+const prisma = new PrismaClient({ adapter })
 
 const CUSTOMERS = [
   { name: 'Akash Farooq', balanceType: 'debit', openingBalance: 1209000 },
