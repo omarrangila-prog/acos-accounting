@@ -1,5 +1,5 @@
-// Firestore-backed data access mirroring the small slice of Prisma the API
-// routes used. Collections: customers, transactions, invoices, expenses, pdc,
+// Firestore-backed data access for the API routes.
+// Collections: customers, transactions, invoices, expenses, pdc,
 // settings. Timestamps are converted to/from JS Date by the firestore helpers.
 import { fdb, newId, toFs, docToObj } from './firestore'
 
@@ -66,7 +66,7 @@ export const customers = {
   create: (data: any) => create(COL.customer, data),
   update: (id: string, data: any) => update(COL.customer, id, data),
   async remove(id: string): Promise<void> {
-    // Cascade-delete the customer's transactions (Prisma did onDelete: Cascade).
+    // Cascade-delete the customer's transactions.
     const snap = await fdb().collection(COL.transaction).where('customerId', '==', id).get()
     const batch = fdb().batch()
     snap.docs.forEach((d) => batch.delete(d.ref))
