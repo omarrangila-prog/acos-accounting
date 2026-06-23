@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { customers as customerRepo, invoices as invoiceRepo, expenses as expenseRepo, pdc as pdcRepo } from '@/lib/db'
 import {
   startOfMonth, endOfMonth, startOfDay, endOfDay, subMonths, format,
   startOfWeek, addDays,
@@ -18,10 +18,10 @@ export async function GET() {
   try {
     const now = new Date()
     const [customers, invoices, expenses, pdcs] = await Promise.all([
-      prisma.customer.findMany({ include: { transactions: true } }),
-      prisma.invoice.findMany(),
-      prisma.expense.findMany(),
-      prisma.pDC.findMany(),
+      customerRepo.findManyWithTxns(),
+      invoiceRepo.findMany(),
+      expenseRepo.findMany(),
+      pdcRepo.findMany(),
     ])
 
     let totalReceivables = 0, totalPayables = 0

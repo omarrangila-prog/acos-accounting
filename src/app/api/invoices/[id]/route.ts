@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { invoices } from '@/lib/db'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -17,18 +17,15 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     const amount = Number(b.amount) || 0
     const paid = Number(b.paidAmount) || 0
     const dueDate = b.dueDate ? new Date(b.dueDate) : null
-    await prisma.invoice.update({
-      where: { id: params.id },
-      data: {
-        customerId: b.customerId || null,
-        customerName: b.customerName || null,
-        date: b.date ? new Date(b.date) : undefined,
-        dueDate,
-        amount,
-        paidAmount: paid,
-        status: deriveStatus(amount, paid, dueDate),
-        notes: b.notes || null,
-      },
+    await invoices.update(params.id, {
+      customerId: b.customerId || null,
+      customerName: b.customerName || null,
+      date: b.date ? new Date(b.date) : undefined,
+      dueDate,
+      amount,
+      paidAmount: paid,
+      status: deriveStatus(amount, paid, dueDate),
+      notes: b.notes || null,
     })
     return NextResponse.json({ success: true })
   } catch (e: any) {
@@ -38,7 +35,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 
 export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    await prisma.invoice.delete({ where: { id: params.id } })
+    await invoices.remove(params.id)
     return NextResponse.json({ success: true })
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 })

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { customers } from '@/lib/db'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
       const openingBalance = Number(r.openingBalance) || 0
 
       try {
-        const existing = await prisma.customer.findFirst({ where: { name } })
+        const existing = await customers.findByName(name)
         const data = {
           name,
           phone: r.phone || null,
@@ -41,10 +41,10 @@ export async function POST(req: NextRequest) {
           balanceType,
         }
         if (existing) {
-          await prisma.customer.update({ where: { id: existing.id }, data })
+          await customers.update(existing.id, data)
           updated++
         } else {
-          await prisma.customer.create({ data })
+          await customers.create(data)
           created++
         }
       } catch (e: any) {
@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const total = await prisma.customer.count()
+    const total = await customers.count()
     return NextResponse.json({ success: true, created, updated, total, errors })
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 })

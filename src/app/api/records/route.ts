@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { invoices as invoiceRepo, expenses as expenseRepo, pdc as pdcRepo } from '@/lib/db'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -8,9 +8,9 @@ export const dynamic = 'force-dynamic'
 export async function GET() {
   try {
     const [invoices, expenses, pdcs] = await Promise.all([
-      prisma.invoice.findMany(),
-      prisma.expense.findMany(),
-      prisma.pDC.findMany(),
+      invoiceRepo.findMany(),
+      expenseRepo.findMany(),
+      pdcRepo.findMany(),
     ])
 
     const records = [

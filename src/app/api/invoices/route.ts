@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { invoices } from '@/lib/db'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -15,13 +15,13 @@ export async function GET(req: NextRequest) {
   try {
     const search = req.nextUrl.searchParams.get('search') || ''
     const status = req.nextUrl.searchParams.get('status') || ''
-    let invoices = await prisma.invoice.findMany({ orderBy: { date: 'desc' } })
-    // refresh derived overdue status on read
-    invoices = invoices.map((i) => ({ ...i, status: deriveStatus(i.amount, i.paidAmount, i.dueDate) })) as any
-    let data = invoices
+    let data = (await invoices.findMany())
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      // refresh derived overdue status on read
+      .map((i) => ({ ...i, status: deriveStatus(i.amount, i.paidAmount, i.dueDate) }))
     if (search) {
       const s = search.toLowerCase()
-      data = data.filter((i) => i.invoiceNumber.toLowerCase().includes(s) || (i.customerName || '').toLowerCase().includes(s))
+      data = data.filter((i) => (i.invoiceNumber || '').toLowerCase().includes(s) || (i.customerName || '').toLowerCase().includes(s))
     }
     if (status) data = data.filter((i) => i.status === status)
     return NextResponse.json(data)
@@ -30,16 +30,18 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// Next number derived from the highest existing INV-#### (not count()), so
-// deletions never cause a duplicate against the unique constraint.
+// Next number derived from the highest existing INV-#### so deletions never
+// cause a duplicate.
 async function nextInvoiceNumber(): Promise<string> {
-  const last = await prisma.invoice.findFirst({
-    where: { invoiceNumber: { startsWith: 'INV-' } },
-    orderBy: { invoiceNumber: 'desc' },
-    select: { invoiceNumber: true },
-  })
-  const n = last ? parseInt(last.invoiceNumber.replace('INV-', ''), 10) || 0 : 0
-  return `INV-${String(n + 1).padStart(4, '0')}`
+  const all = await invoices.findMany()
+  let max = 0
+  for (const i of all) {
+    if (typeof i.invoiceNumber === 'string' && i.invoiceNumber.startsWith('INV-')) {
+      const n = parseInt(i.invoiceNumber.replace('INV-', ''), 10) || 0
+      if (n > max) max = n
+    }
+  }
+  return `INV-${String(max + 1).padStart(4, '0')}`
 }
 
 export async function POST(req: NextRequest) {
@@ -48,7 +50,9 @@ export async function POST(req: NextRequest) {
     const amount = Number(b.amount) || 0
     const paid = Number(b.paidAmount) || 0
     const dueDate = b.dueDate ? new Date(b.dueDate) : null
-    const data = {
+    const invoiceNumber = b.invoiceNumber || (await nextInvoiceNumber())
+    const inv = await invoices.create({
+      invoiceNumber,
       customerId: b.customerId || null,
       customerName: b.customerName || null,
       date: b.date ? new Date(b.date) : new Date(),
@@ -57,21 +61,8 @@ export async function POST(req: NextRequest) {
       paidAmount: paid,
       status: deriveStatus(amount, paid, dueDate),
       notes: b.notes || null,
-    }
-
-    // Retry once on a unique-collision (concurrent creates) with a fresh number.
-    let inv
-    for (let attempt = 0; attempt < 2; attempt++) {
-      const invoiceNumber = b.invoiceNumber || (await nextInvoiceNumber())
-      try {
-        inv = await prisma.invoice.create({ data: { invoiceNumber, ...data } })
-        break
-      } catch (err: any) {
-        if (err?.code === 'P2002' && !b.invoiceNumber && attempt === 0) continue
-        throw err
-      }
-    }
-    return NextResponse.json({ success: true, id: inv!.id })
+    })
+    return NextResponse.json({ success: true, id: inv.id })
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 })
   }

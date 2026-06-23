@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { customers as customerRepo, invoices as invoiceRepo, expenses as expenseRepo, pdc as pdcRepo } from '@/lib/db'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
     const inRange = (d: any) => { const x = new Date(d); return x >= from && x <= to }
 
     if (type === 'pnl') {
-      const [invoices, expenses] = await Promise.all([prisma.invoice.findMany(), prisma.expense.findMany()])
+      const [invoices, expenses] = await Promise.all([invoiceRepo.findMany(), expenseRepo.findMany()])
       const revenue = invoices.filter((i) => inRange(i.date)).reduce((s, i) => s + i.paidAmount, 0)
       const exp = expenses.filter((e) => inRange(e.date)).reduce((s, e) => s + e.amount, 0)
       return NextResponse.json({ type, title: 'Profit & Loss', summary: { revenue, expenses: exp, netProfit: revenue - exp },
@@ -32,13 +32,13 @@ export async function GET(req: NextRequest) {
     }
 
     if (type === 'expenses') {
-      const expenses = await prisma.expense.findMany({ orderBy: { date: 'desc' } })
+      const expenses = (await expenseRepo.findMany()).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
       const rows = expenses.filter((e) => inRange(e.date))
       return NextResponse.json({ type, title: 'Expenses Report', total: rows.reduce((s, e) => s + e.amount, 0), rows })
     }
 
     if (type === 'receivables' || type === 'payables') {
-      const customers = await prisma.customer.findMany({ include: { transactions: true } })
+      const customers = await customerRepo.findManyWithTxns()
       const rows = customers.map((c) => ({ name: c.name, phone: c.phone, balance: custBalance(c) }))
         .filter((r) => type === 'receivables' ? r.balance > 0 : r.balance < 0)
       return NextResponse.json({ type, title: type === 'receivables' ? 'Receivables' : 'Payables',
@@ -46,13 +46,13 @@ export async function GET(req: NextRequest) {
     }
 
     if (type === 'pdc') {
-      const pdcs = await prisma.pDC.findMany({ orderBy: { chequeDate: 'asc' } })
+      const pdcs = await pdcRepo.findMany()
       const rows = pdcs.filter((p) => p.chequeDate ? inRange(p.chequeDate) : true)
       return NextResponse.json({ type, title: 'PDC Report', total: rows.reduce((s, p) => s + p.amount, 0), rows })
     }
 
     if (type === 'ledger') {
-      const customers = await prisma.customer.findMany({ include: { transactions: true } })
+      const customers = await customerRepo.findManyWithTxns()
       const rows = customers.map((c) => ({ name: c.name, balance: custBalance(c),
         txns: c.transactions.filter((t) => inRange(t.date)).length }))
       return NextResponse.json({ type, title: 'Customer Ledger', rows })

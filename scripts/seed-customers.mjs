@@ -1,13 +1,39 @@
-// One-time customer import seed (PostgreSQL).
-// Usage:
-//   DATABASE_URL=postgresql://... node prisma/seed-customers.mjs
+// One-time customer import seed (Firestore).
+// Usage (env from .env or shell):
+//   FIREBASE_PROJECT_ID=... FIREBASE_CLIENT_EMAIL=... FIREBASE_PRIVATE_KEY=... \
+//     node scripts/seed-customers.mjs
 //
 // Idempotent by name: existing customers are updated, not duplicated.
 // Opening balance is stored on the Customer and shown as the first ledger row
 // by the statement. balanceType "debit" = receivable, "credit" = payable.
-import { PrismaClient } from '@prisma/client'
+import { initializeApp, cert, getApps } from 'firebase-admin/app'
+import { getFirestore, Timestamp } from 'firebase-admin/firestore'
+import { readFileSync } from 'node:fs'
 
-const prisma = new PrismaClient()
+// Load .env if present (so `node scripts/seed-customers.mjs` works locally).
+try {
+  const env = readFileSync(new URL('../.env', import.meta.url), 'utf8')
+  for (const line of env.split('\n')) {
+    const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)\s*$/)
+    if (m && !process.env[m[1]]) {
+      let v = m[2].trim()
+      if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) v = v.slice(1, -1)
+      process.env[m[1]] = v
+    }
+  }
+} catch {}
+
+const projectId = process.env.FIREBASE_PROJECT_ID
+const clientEmail = process.env.FIREBASE_CLIENT_EMAIL
+const privateKey = (process.env.FIREBASE_PRIVATE_KEY || '').replace(/\\n/g, '\n')
+if (!projectId || !clientEmail || !privateKey) {
+  console.error('Missing FIREBASE_PROJECT_ID / FIREBASE_CLIENT_EMAIL / FIREBASE_PRIVATE_KEY')
+  process.exit(1)
+}
+if (!getApps().length) initializeApp({ credential: cert({ projectId, clientEmail, privateKey }) })
+const db = getFirestore()
+
+const newId = () => 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10)
 
 const CUSTOMERS = [
   { name: 'Akash Farooq', balanceType: 'debit', openingBalance: 1209000 },
@@ -35,27 +61,26 @@ const CUSTOMERS = [
 ]
 
 async function main() {
+  const col = db.collection('customers')
   let created = 0, updated = 0
   for (const c of CUSTOMERS) {
-    const existing = await prisma.customer.findFirst({ where: { name: c.name } })
-    if (existing) {
-      await prisma.customer.update({ where: { id: existing.id }, data: c })
+    const snap = await col.where('name', '==', c.name).limit(1).get()
+    const now = Timestamp.now()
+    if (!snap.empty) {
+      await snap.docs[0].ref.set({ ...c, updatedAt: now }, { merge: true })
       updated++
     } else {
-      await prisma.customer.create({ data: c })
+      await col.doc(newId()).set({ ...c, phone: null, address: null, createdAt: now, updatedAt: now })
       created++
     }
   }
 
-  // Verify totals.
-  const all = await prisma.customer.findMany({ include: { transactions: true } })
-  const net = (x) => {
-    const opening = x.balanceType === 'credit' ? -x.openingBalance : x.openingBalance
-    const t = x.transactions.reduce((s, tx) => s + (tx.type === 'credit' ? -tx.amount : tx.amount), 0)
-    return opening + t
-  }
+  const all = (await col.get()).docs.map((d) => d.data())
   let debit = 0, credit = 0
-  for (const c of all) { const b = net(c); if (b >= 0) debit += b; else credit += -b }
+  for (const c of all) {
+    const b = c.balanceType === 'credit' ? -c.openingBalance : c.openingBalance
+    if (b >= 0) debit += b; else credit += -b
+  }
 
   console.log(`Created: ${created}, Updated: ${updated}, Total parties: ${all.length}`)
   console.log(`Total Debit (Receivable): ${debit.toLocaleString()}`)
@@ -63,6 +88,4 @@ async function main() {
   console.log(`Net Balance: ${(debit - credit).toLocaleString()} ${debit - credit >= 0 ? 'Receivable' : 'Payable'}`)
 }
 
-main()
-  .then(() => prisma.$disconnect())
-  .catch(async (e) => { console.error(e); await prisma.$disconnect(); process.exit(1) })
+main().then(() => process.exit(0)).catch((e) => { console.error(e); process.exit(1) })

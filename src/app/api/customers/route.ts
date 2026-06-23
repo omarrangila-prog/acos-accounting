@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma, insensitive } from '@/lib/prisma'
+import { customers } from '@/lib/db'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -15,17 +15,12 @@ function netOf(c: any): number {
 
 export async function GET(req: NextRequest) {
   try {
-    const search = req.nextUrl.searchParams.get('search') || ''
-    const customers = await prisma.customer.findMany({
-      where: search ? { name: { contains: search, ...insensitive } } : undefined,
-      include: { transactions: true },
-      orderBy: { createdAt: 'desc' },
-    })
-    const data = customers.map((c) => ({
-      ...c,
-      currentBalance: netOf(c),
-      transactions: undefined,
-    }))
+    const search = (req.nextUrl.searchParams.get('search') || '').toLowerCase()
+    const list = await customers.findManyWithTxns()
+    const data = list
+      .filter((c) => (search ? (c.name || '').toLowerCase().includes(search) : true))
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .map((c) => ({ ...c, currentBalance: netOf(c), transactions: undefined }))
     return NextResponse.json(data)
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 })
@@ -36,14 +31,12 @@ export async function POST(req: NextRequest) {
   try {
     const b = await req.json()
     if (!b.name) return NextResponse.json({ error: 'Name required' }, { status: 400 })
-    const c = await prisma.customer.create({
-      data: {
-        name: b.name,
-        phone: b.phone || null,
-        address: b.address || null,
-        openingBalance: Number(b.openingBalance) || 0,
-        balanceType: b.balanceType === 'credit' ? 'credit' : 'debit',
-      },
+    const c = await customers.create({
+      name: b.name,
+      phone: b.phone || null,
+      address: b.address || null,
+      openingBalance: Number(b.openingBalance) || 0,
+      balanceType: b.balanceType === 'credit' ? 'credit' : 'debit',
     })
     return NextResponse.json({ success: true, id: c.id })
   } catch (e: any) {
