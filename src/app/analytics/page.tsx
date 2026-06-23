@@ -38,7 +38,7 @@ export default function AnalyticsPage() {
   const pie = Object.entries(expDist).map(([k, v]) => ({ label: expenseCategoryLabel(k), value: v, color: CAT_COLORS[k] || '#64748B' }))
 
   return (
-    <div className="p-6 space-y-5 animate-enter">
+    <div className="p-4 sm:p-6 space-y-4 sm:space-y-5 animate-enter">
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="card p-5"><p className="text-xs text-text-muted mb-1">6-Month Revenue</p><p className="text-2xl font-bold text-success">{formatCurrency(revenue6, true)}</p></div>
         <div className="card p-5"><p className="text-xs text-text-muted mb-1">6-Month Expenses</p><p className="text-2xl font-bold text-danger">{formatCurrency(expenses6, true)}</p></div>

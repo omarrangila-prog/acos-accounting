@@ -129,7 +129,7 @@ export default function ExpensesPage() {
   }
 
   return (
-    <div className="p-6 space-y-5 animate-enter">
+    <div className="p-4 sm:p-6 space-y-4 sm:space-y-5 animate-enter">
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="card p-5"><p className="text-xs text-text-muted mb-1">Total Expenses</p><p className="text-2xl font-bold text-danger">{formatCurrency(total)}</p></div>
         <div className="card p-5"><p className="text-xs text-text-muted mb-1">Recurring</p><p className="text-2xl font-bold text-warning">{formatCurrency(recurring)}</p></div>
@@ -151,14 +151,14 @@ export default function ExpensesPage() {
       )}
 
       <div className="card overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-3 border-b border-border flex-wrap gap-2">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between px-4 sm:px-5 py-3 border-b border-border gap-2">
           <p className="section-title">Expenses</p>
-          <div className="flex items-center gap-2">
-            <div className="relative">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative flex-1 min-w-[140px]">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
-              <input placeholder="Search..." className="input pl-8 !py-1.5 text-xs w-40" value={search} onChange={(e) => setSearch(e.target.value)} />
+              <input placeholder="Search..." className="input pl-8 !py-1.5 text-xs w-full sm:w-40" value={search} onChange={(e) => setSearch(e.target.value)} />
             </div>
-            <select className="input !py-1.5 text-xs w-36" value={filterCat} onChange={(e) => setFilterCat(e.target.value)}>
+            <select className="input !py-1.5 text-xs flex-1 min-w-[130px] sm:w-36 sm:flex-none" value={filterCat} onChange={(e) => setFilterCat(e.target.value)}>
               <option value="">All Categories</option>
               {EXPENSE_CATEGORIES.map((c) => <option key={c} value={c}>{expenseCategoryLabel(c)}</option>)}
             </select>

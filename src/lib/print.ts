@@ -52,7 +52,11 @@ export function printTableReport(
   reportTitle: string,
   columns: { header: string; key: string; align?: 'left' | 'right' }[],
   rows: Record<string, any>[],
-  opts?: { subtitle?: string; total?: { label: string; value: string } },
+  opts?: {
+    subtitle?: string
+    total?: { label: string; value: string }
+    summary?: { k: string; v: string; cls?: string }[]
+  },
 ) {
   const head = columns.map((c) => `<th class="${c.align === 'right' ? 'r' : ''}">${c.header}</th>`).join('')
   const bodyRows = rows.map((r) =>
@@ -61,11 +65,15 @@ export function printTableReport(
   const totalRow = opts?.total
     ? `<tfoot><tr><td colspan="${columns.length - 1}">${opts.total.label}</td><td class="r">${opts.total.value}</td></tr></tfoot>`
     : ''
+  const summaryHtml = opts?.summary?.length
+    ? `<div class="summary">${opts.summary.map((s) => `<div class="box"><div class="k">${s.k}</div><div class="v ${s.cls || ''}">${s.v}</div></div>`).join('')}</div>`
+    : ''
   printHtml(reportTitle, `
     <div class="rpt-header">
       <div><div class="rpt-company">${COMPANY_NAME}</div></div>
       <div><div class="rpt-title">${reportTitle}</div>${opts?.subtitle ? `<div class="rpt-meta">${opts.subtitle}</div>` : ''}</div>
     </div>
+    ${summaryHtml}
     <table>
       <thead><tr>${head}</tr></thead>
       <tbody>${bodyRows || `<tr><td colspan="${columns.length}" style="text-align:center;color:#94A3B8">No records</td></tr>`}</tbody>

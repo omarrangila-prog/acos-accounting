@@ -8,7 +8,7 @@ import { downloadExcel } from '@/lib/export'
 import { useShell } from '@/components/AppShell'
 import { Modal, Loading, Empty } from '@/components/ui'
 import { formatCurrency, formatDate } from '@/lib/utils'
-import { printHtml, fmt, COMPANY_NAME } from '@/lib/print'
+import { printHtml, printTableReport, fmt, COMPANY_NAME } from '@/lib/print'
 import { FileDown } from 'lucide-react'
 
 const blankCust = { name: '', phone: '', address: '', openingBalance: '', balanceType: 'debit' }
@@ -131,7 +131,38 @@ export default function CustomersPage() {
     finally { setExporting(false) }
   }
 
-  const handlePrint = () => window.print()
+  // Clean "All Parties Balance" report — generated as a standalone document
+  // (no website chrome / sidebar / buttons), using all DB records.
+  const handlePrint = async () => {
+    const all = await api.getCustomers().catch(() => customers)
+    const list = (all || []).slice().sort((a: any, b: any) => Math.abs(b.currentBalance) - Math.abs(a.currentBalance))
+    const tDebit = list.filter((c: any) => c.currentBalance > 0).reduce((s: number, c: any) => s + c.currentBalance, 0)
+    const tCredit = list.filter((c: any) => c.currentBalance < 0).reduce((s: number, c: any) => s + -c.currentBalance, 0)
+    const tNet = tDebit - tCredit
+    printTableReport(
+      'All Parties Balance',
+      [
+        { header: 'Party Name', key: 'name' },
+        { header: 'Phone', key: 'phone' },
+        { header: 'Type', key: 'type' },
+        { header: 'Balance', key: 'balance', align: 'right' },
+      ],
+      list.map((c: any) => ({
+        name: c.name, phone: c.phone || '-',
+        type: c.currentBalance >= 0 ? 'Debit / Receivable' : 'Credit / Payable',
+        balance: fmt(Math.abs(c.currentBalance)),
+      })),
+      {
+        subtitle: `${list.length} Parties · ${new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}`,
+        total: { label: `Net Balance (${tNet >= 0 ? 'Receivable' : 'Payable'})`, value: fmt(Math.abs(tNet)) },
+        summary: [
+          { k: 'Total Debit', v: fmt(tDebit), cls: 'red' },
+          { k: 'Total Credit', v: fmt(tCredit), cls: 'green' },
+          { k: 'Net Balance', v: fmt(Math.abs(tNet)), cls: tNet >= 0 ? 'red' : 'green' },
+        ],
+      },
+    )
+  }
 
   // ---- Customer statement / ledger detail view ----
   if (ledger) {
@@ -298,19 +329,19 @@ export default function CustomersPage() {
   }
 
   return (
-    <div className="p-6 space-y-5 animate-enter">
+    <div className="p-4 sm:p-6 space-y-4 sm:space-y-5 animate-enter">
       <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
           <h2 className="text-xl font-bold text-text-primary">All Parties Balance</h2>
           <p className="text-sm text-text-muted">Summary of all customers — click a party to view detailed statement</p>
         </div>
-        <div className="flex items-center gap-2">
-          <button onClick={handleExport} disabled={exporting} className="btn-secondary">
+        <div className="flex flex-wrap items-center gap-2">
+          <button onClick={handleExport} disabled={exporting} className="btn-secondary !px-3 sm:!px-4">
             {exporting ? <RefreshCw size={16} className="animate-spin" /> : <Download size={16} />} Excel
           </button>
-          <button onClick={handlePrint} className="btn-secondary"><Printer size={16} /> Print Report</button>
-          <button onClick={() => { setTxnForm({ ...blankTxn }); setShowTxn(true) }} className="btn-secondary"><FileText size={16} /> Add Transaction</button>
-          <button onClick={openAddCust} className="btn-primary"><Plus size={16} /> Add Customer</button>
+          <button onClick={handlePrint} className="btn-secondary !px-3 sm:!px-4"><Printer size={16} /> <span className="hidden xs:inline">Print Report</span><span className="xs:hidden">Print</span></button>
+          <button onClick={() => { setTxnForm({ ...blankTxn }); setShowTxn(true) }} className="btn-secondary !px-3 sm:!px-4"><FileText size={16} /> <span className="hidden sm:inline">Add Transaction</span><span className="sm:hidden">Txn</span></button>
+          <button onClick={openAddCust} className="btn-primary !px-3 sm:!px-4"><Plus size={16} /> <span className="hidden sm:inline">Add Customer</span><span className="sm:hidden">Customer</span></button>
         </div>
       </div>
 

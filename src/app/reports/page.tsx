@@ -89,18 +89,18 @@ export default function ReportsPage() {
   }
 
   return (
-    <div className="p-6 space-y-5 animate-enter">
+    <div className="p-4 sm:p-6 space-y-4 sm:space-y-5 animate-enter">
       <div className="card p-5">
         <p className="section-title mb-4">Generate Report</p>
-        <div className="flex items-end gap-4 flex-wrap">
-          <div><label className="label">Report Type</label>
-            <select className="input w-48" value={type} onChange={(e) => setType(e.target.value)}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:flex lg:items-end gap-3 lg:gap-4">
+          <div className="lg:w-48"><label className="label">Report Type</label>
+            <select className="input w-full" value={type} onChange={(e) => setType(e.target.value)}>
               {TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
             </select>
           </div>
-          <div><label className="label">From Date</label><input type="date" className="input w-40" value={from} onChange={(e) => setFrom(e.target.value)} /></div>
-          <div><label className="label">To Date</label><input type="date" className="input w-40" value={to} onChange={(e) => setTo(e.target.value)} /></div>
-          <button onClick={run} className="btn-primary"><Play size={15} /> Run Report</button>
+          <div className="lg:w-40"><label className="label">From Date</label><input type="date" className="input w-full" value={from} onChange={(e) => setFrom(e.target.value)} /></div>
+          <div className="lg:w-40"><label className="label">To Date</label><input type="date" className="input w-full" value={to} onChange={(e) => setTo(e.target.value)} /></div>
+          <button onClick={run} className="btn-primary justify-center sm:col-span-2 lg:col-span-1"><Play size={15} /> Run Report</button>
         </div>
       </div>
 

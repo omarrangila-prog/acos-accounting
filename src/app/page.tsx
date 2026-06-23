@@ -37,7 +37,7 @@ export default function DashboardPage() {
   ]
 
   return (
-    <div className="p-6 space-y-5 animate-enter">
+    <div className="p-4 sm:p-6 space-y-4 sm:space-y-5 animate-enter">
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {cards.map((c) => (
           <div key={c.label} className="card p-5">

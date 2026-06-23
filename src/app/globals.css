@@ -97,6 +97,9 @@
   body { overflow: visible !important; }
   .no-print { display: none !important; }
   .print-area { position: absolute; inset: 0; background: #fff; padding: 0; }
+  /* Safety net: if the app page itself is printed (Ctrl+P), hide the website
+     chrome (sidebar + top header) so it never appears in a printout. */
+  aside, header { display: none !important; }
 }
 .print-only { display: none; }
 @media print {

@@ -111,7 +111,7 @@ export default function PDCPage() {
   }
 
   return (
-    <div className="p-6 space-y-5 animate-enter">
+    <div className="p-4 sm:p-6 space-y-4 sm:space-y-5 animate-enter">
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="card p-5"><p className="text-xs text-text-muted mb-1">PDC Receivable</p><p className="text-2xl font-bold text-success">{formatCurrency(totalRec, true)}</p></div>
         <div className="card p-5"><p className="text-xs text-text-muted mb-1">PDC Payable</p><p className="text-2xl font-bold text-danger">{formatCurrency(totalPay, true)}</p></div>
@@ -120,12 +120,12 @@ export default function PDCPage() {
       </div>
 
       <div className="card overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-3 border-b border-border flex-wrap gap-2">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between px-4 sm:px-5 py-3 border-b border-border gap-2">
           <div className="flex items-center gap-2">
             <button onClick={() => setTab('receivable')} className={tab === 'receivable' ? 'btn-primary text-xs !py-1.5' : 'btn-ghost text-xs !py-1.5'}>PDC Receivable</button>
             <button onClick={() => setTab('payable')} className={tab === 'payable' ? 'btn-primary text-xs !py-1.5' : 'btn-ghost text-xs !py-1.5'}>PDC Payable</button>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button onClick={handleExport} disabled={exporting} className="btn-secondary text-xs !py-1.5">
               {exporting ? <RefreshCw size={13} className="animate-spin" /> : <Download size={13} />} Excel
             </button>

@@ -87,7 +87,7 @@ export default function RecordsPage() {
   }
 
   return (
-    <div className="p-6 space-y-5 animate-enter">
+    <div className="p-4 sm:p-6 space-y-4 sm:space-y-5 animate-enter">
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="card p-5"><p className="text-xs text-text-muted mb-1">Total Records</p><p className="text-2xl font-bold">{data.counts.total}</p></div>
         <div className="card p-5"><p className="text-xs text-text-muted mb-1">Invoices</p><p className="text-2xl font-bold text-accent">{data.counts.invoices}</p></div>

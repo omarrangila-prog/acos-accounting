@@ -103,7 +103,7 @@ export default function InvoicesPage() {
   }
 
   return (
-    <div className="p-6 space-y-5 animate-enter">
+    <div className="p-4 sm:p-6 space-y-4 sm:space-y-5 animate-enter">
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="card p-5"><p className="text-xs text-text-muted mb-1">Total Invoices</p><p className="text-2xl font-bold">{invoices.length}</p></div>
         <div className="card p-5"><p className="text-xs text-text-muted mb-1">Total Billed</p><p className="text-2xl font-bold text-accent">{formatCurrency(totalBilled, true)}</p></div>
@@ -112,17 +112,17 @@ export default function InvoicesPage() {
       </div>
 
       <div className="card overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-3 border-b border-border flex-wrap gap-2">
-          <div className="flex items-center gap-2">
-            <div className="relative">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between px-4 sm:px-5 py-3 border-b border-border gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative flex-1 min-w-[160px]">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
-              <input placeholder="Search invoice or customer..." className="input pl-8 !py-1.5 text-xs w-60" value={search} onChange={(e) => setSearch(e.target.value)} />
+              <input placeholder="Search invoice or customer..." className="input pl-8 !py-1.5 text-xs w-full lg:w-60" value={search} onChange={(e) => setSearch(e.target.value)} />
             </div>
-            <select className="input !py-1.5 text-xs w-32" value={status} onChange={(e) => setStatus(e.target.value)}>
+            <select className="input !py-1.5 text-xs flex-1 min-w-[120px] lg:w-32 lg:flex-none" value={status} onChange={(e) => setStatus(e.target.value)}>
               <option value="">All Status</option><option value="unpaid">Unpaid</option><option value="partial">Partial</option><option value="paid">Paid</option><option value="overdue">Overdue</option>
             </select>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button onClick={handleExport} disabled={exporting} className="btn-secondary text-xs !py-1.5">
               {exporting ? <RefreshCw size={13} className="animate-spin" /> : <Download size={13} />} Excel
             </button>
