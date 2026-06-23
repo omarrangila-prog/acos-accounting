@@ -189,7 +189,7 @@ export default function CustomersPage() {
       ].join('')
       printHtml(`Statement - ${ledger.name}`, `
         <div class="rpt-header">
-          <div><div class="rpt-company">${COMPANY_NAME}</div><div class="rpt-sub">Accounting Software · Customer Statement</div></div>
+          <div><div class="rpt-company">${COMPANY_NAME}</div></div>
           <div><div class="rpt-title">Account Statement</div><div class="rpt-meta">${rangeText}</div></div>
         </div>
         <div class="rpt-info">
