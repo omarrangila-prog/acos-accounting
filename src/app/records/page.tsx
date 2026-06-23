@@ -125,7 +125,7 @@ export default function RecordsPage() {
         </div>
 
         {loading ? <Loading /> : records.length === 0 ? <Empty title="No records found" /> : (
-          <table className="w-full">
+          <table className="rtable w-full">
             <thead><tr className="border-b border-border bg-surface-1">
               <th className="text-left px-5 py-3 table-header">Date & Time</th>
               <th className="text-left px-5 py-3 table-header">Module</th>
@@ -139,12 +139,12 @@ export default function RecordsPage() {
                 const dt = formatDateTime(r.date)
                 return (
                   <tr key={`${r.moduleKey}-${r.id}`} className="border-b border-border/50 hover:bg-surface-1/50">
-                    <td className="px-5 py-3"><p className="text-sm text-text-secondary">{dt.date}</p><p className="text-xs text-text-muted">{dt.time}</p></td>
-                    <td className="px-5 py-3"><span className={`badge ${MODULE_BADGE[r.moduleKey] || 'badge-neutral'}`}>{r.module}</span></td>
-                    <td className="px-5 py-3 text-sm font-medium text-text-primary">{r.title}</td>
-                    <td className="px-5 py-3 text-sm text-text-secondary">{r.party}</td>
-                    <td className="px-5 py-3 text-sm">{r.status === 'pending' ? <span className="badge badge-warning">pending</span> : <span className="text-text-muted">{r.status}</span>}</td>
-                    <td className="px-5 py-3 text-right text-sm font-semibold text-danger">{formatCurrency(r.amount)}</td>
+                    <td data-label="Date & Time" className="px-5 py-3"><p className="text-sm text-text-secondary">{dt.date}</p><p className="text-xs text-text-muted">{dt.time}</p></td>
+                    <td data-label="Module" className="px-5 py-3"><span className={`badge ${MODULE_BADGE[r.moduleKey] || 'badge-neutral'}`}>{r.module}</span></td>
+                    <td data-label="Title" className="px-5 py-3 text-sm font-medium text-text-primary">{r.title}</td>
+                    <td data-label="Customer / Vendor" className="px-5 py-3 text-sm text-text-secondary">{r.party}</td>
+                    <td data-label="Status" className="px-5 py-3 text-sm">{r.status === 'pending' ? <span className="badge badge-warning">pending</span> : <span className="text-text-muted">{r.status}</span>}</td>
+                    <td data-label="Amount" className="px-5 py-3 text-right text-sm font-semibold text-danger">{formatCurrency(r.amount)}</td>
                   </tr>
                 )
               })}

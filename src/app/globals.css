@@ -85,12 +85,53 @@
 .table-scroll { @apply w-full overflow-x-auto; }
 .table-scroll > table { @apply min-w-[640px]; }
 
-/* Make all data tables horizontally scrollable on small screens.
-   Tables live inside `.card.overflow-hidden`; switch that to auto-scroll
-   and give the table a minimum width so columns never crush on mobile. */
-.card table { min-width: 640px; }
-.card.overflow-hidden:has(> table),
-.card.overflow-hidden:has(> .table-scroll) { overflow-x: auto; }
+/* ----- Responsive data tables -----
+   Desktop/tablet (>= 768px): normal table, sticky header, horizontal scroll
+   inside the card if needed.
+   Mobile (< 768px): each row becomes a premium card; each cell shows its
+   column label (from data-label) on the left and the value on the right.
+   The actions cell (.cell-actions) spans full width as a button row. */
+
+@media (min-width: 768px) {
+  .card table { min-width: 640px; }
+  .card.overflow-hidden:has(> table) { overflow-x: auto; }
+  /* sticky header while scrolling the table body */
+  .card table thead th {
+    position: sticky; top: 0; z-index: 5;
+    background: var(--color-surface-1);
+  }
+}
+
+@media (max-width: 767px) {
+  table.rtable, table.rtable thead, table.rtable tbody, table.rtable tr, table.rtable td {
+    display: block; width: 100%;
+  }
+  table.rtable { min-width: 0 !important; }
+  table.rtable thead { display: none; }            /* hide header row on mobile */
+  table.rtable tfoot { display: block; }
+  table.rtable tr {
+    @apply rounded-xl border border-border bg-surface-0 shadow-card mb-3;
+    padding: 6px 4px;
+  }
+  table.rtable td {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; padding: 8px 14px; text-align: right !important;
+    border: none; border-bottom: 1px solid var(--color-border);
+  }
+  table.rtable td:last-child { border-bottom: none; }
+  table.rtable td::before {
+    content: attr(data-label);
+    font-size: 11px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: .03em; color: var(--color-text-muted);
+    text-align: left; flex: 0 0 auto; margin-right: auto;
+  }
+  table.rtable td.cell-actions { justify-content: flex-end; }
+  table.rtable td.cell-actions::before { display: none; }
+  table.rtable td.cell-actions > div { width: 100%; justify-content: space-around; }
+  table.rtable td:empty { display: none; }
+  /* tfoot total row as a highlighted card */
+  table.rtable tfoot tr { @apply bg-surface-1; }
+}
 
 /* Print layout — used by statement / report print-to-PDF */
 @media print {

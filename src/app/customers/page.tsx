@@ -373,7 +373,7 @@ export default function CustomersPage() {
             <button onClick={openAddCust} className="btn-primary"><Plus size={16} /> Add Customer</button>
           </div>
         ) : (
-          <table className="w-full">
+          <table className="rtable w-full">
             <thead><tr className="border-b border-border bg-surface-1">
               <th className="text-left px-5 py-3 table-header">Party Name</th>
               <th className="text-left px-5 py-3 table-header">Phone</th>
@@ -384,11 +384,11 @@ export default function CustomersPage() {
             <tbody>
               {filtered.map((c) => (
                 <tr key={c.id} className="border-b border-border/50 hover:bg-surface-1/50">
-                  <td className="px-5 py-3 text-sm font-medium text-text-primary cursor-pointer" onClick={() => openLedger(c.id)}>{c.name}</td>
-                  <td className="px-5 py-3 text-sm text-text-secondary">{c.phone || '-'}</td>
-                  <td className={`px-5 py-3 text-right text-sm font-semibold ${c.currentBalance >= 0 ? 'text-danger' : 'text-success'}`}>{formatCurrency(Math.abs(c.currentBalance))}</td>
-                  <td className="px-5 py-3"><span className={`badge ${c.currentBalance >= 0 ? 'badge-danger' : 'badge-success'}`}>{c.currentBalance >= 0 ? 'Debit' : 'Credit'}</span></td>
-                  <td className="px-5 py-3">
+                  <td data-label="Party Name" className="px-5 py-3 text-sm font-medium text-text-primary cursor-pointer" onClick={() => openLedger(c.id)}>{c.name}</td>
+                  <td data-label="Phone" className="px-5 py-3 text-sm text-text-secondary">{c.phone || '-'}</td>
+                  <td data-label="Balance" className={`px-5 py-3 text-right text-sm font-semibold ${c.currentBalance >= 0 ? 'text-danger' : 'text-success'}`}>{formatCurrency(Math.abs(c.currentBalance))}</td>
+                  <td data-label="Type" className="px-5 py-3"><span className={`badge ${c.currentBalance >= 0 ? 'badge-danger' : 'badge-success'}`}>{c.currentBalance >= 0 ? 'Debit' : 'Credit'}</span></td>
+                  <td className="px-5 py-3 cell-actions">
                     <div className="flex items-center gap-0.5 justify-end">
                       <button onClick={() => openLedger(c.id)} title="View statement" className="btn-ghost !px-2 !py-1.5"><Eye size={15} /></button>
                       <button onClick={() => openAddTxnFor(c.id)} title="Add transaction" className="btn-ghost !px-2 !py-1.5 text-accent"><PlusCircle size={15} /></button>

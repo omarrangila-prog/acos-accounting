@@ -137,7 +137,7 @@ export default function PDCPage() {
         {loading ? <Loading /> : rows.length === 0 ? (
           <Empty title='No PDC cheques yet. Click "Add PDC Cheque" to get started.' icon={<CreditCard size={40} className="opacity-40" />} />
         ) : (
-          <table className="w-full">
+          <table className="rtable w-full">
             <thead><tr className="border-b border-border bg-surface-1">
               <th className="text-left px-5 py-3 table-header">Party Name</th>
               <th className="text-left px-5 py-3 table-header">Cheque #</th>
@@ -150,18 +150,18 @@ export default function PDCPage() {
             <tbody>
               {rows.map((p) => (
                 <tr key={p.id} className="border-b border-border/50 hover:bg-surface-1/50">
-                  <td className="px-5 py-3 text-sm font-medium text-text-primary">{p.partyName}</td>
-                  <td className="px-5 py-3 text-sm text-text-secondary">{p.chequeNumber || '-'}</td>
-                  <td className="px-5 py-3 text-sm text-text-secondary">{p.bank || '-'}</td>
-                  <td className="px-5 py-3 text-sm text-text-secondary">{formatDate(p.chequeDate)}</td>
-                  <td className="px-5 py-3 text-right text-sm font-semibold">{formatCurrency(p.amount)}</td>
-                  <td className="px-5 py-3">
+                  <td data-label="Party Name" className="px-5 py-3 text-sm font-medium text-text-primary">{p.partyName}</td>
+                  <td data-label="Cheque #" className="px-5 py-3 text-sm text-text-secondary">{p.chequeNumber || '-'}</td>
+                  <td data-label="Bank" className="px-5 py-3 text-sm text-text-secondary">{p.bank || '-'}</td>
+                  <td data-label="Cheque Date" className="px-5 py-3 text-sm text-text-secondary">{formatDate(p.chequeDate)}</td>
+                  <td data-label="Amount" className="px-5 py-3 text-right text-sm font-semibold">{formatCurrency(p.amount)}</td>
+                  <td data-label="Status" className="px-5 py-3">
                     <select value={p.status} onChange={(e) => setStatus(p, e.target.value)}
                       className={`badge ${p.status === 'cleared' ? 'badge-success' : p.status === 'bounced' ? 'badge-danger' : 'badge-warning'} !border-0 cursor-pointer`}>
                       {STATUS.map((s) => <option key={s} value={s}>{s}</option>)}
                     </select>
                   </td>
-                  <td className="px-5 py-3">
+                  <td className="px-5 py-3 cell-actions">
                     <div className="flex items-center gap-1 justify-end">
                       <button onClick={() => setViewItem(p)} title="View" className="btn-ghost !px-2 !py-1.5"><Eye size={15} /></button>
                       <button onClick={() => { setEditItem(p); setForm({ pdcType: p.pdcType, partyName: p.partyName, chequeNumber: p.chequeNumber || '', bank: p.bank || '', amount: String(p.amount), chequeDate: toDateInput(p.chequeDate), status: p.status, remarks: p.remarks || '' }); setShowAdd(true) }} title="Edit" className="btn-ghost !px-2 !py-1.5"><Pencil size={15} /></button>

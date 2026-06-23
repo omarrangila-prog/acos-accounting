@@ -132,7 +132,7 @@ export default function InvoicesPage() {
         </div>
 
         {loading ? <Loading /> : invoices.length === 0 ? <Empty title="No invoices yet." /> : (
-          <table className="w-full">
+          <table className="rtable w-full">
             <thead><tr className="border-b border-border bg-surface-1">
               <th className="text-left px-5 py-3 table-header">Invoice #</th>
               <th className="text-left px-5 py-3 table-header">Customer</th>
@@ -146,14 +146,14 @@ export default function InvoicesPage() {
             <tbody>
               {invoices.map((i) => (
                 <tr key={i.id} className="border-b border-border/50 hover:bg-surface-1/50">
-                  <td className="px-5 py-3 text-sm font-medium text-text-primary">{i.invoiceNumber}</td>
-                  <td className="px-5 py-3 text-sm text-text-secondary">{i.customerName || '-'}</td>
-                  <td className="px-5 py-3 text-sm text-text-secondary">{formatDate(i.date)}</td>
-                  <td className="px-5 py-3 text-sm text-text-secondary">{formatDate(i.dueDate)}</td>
-                  <td className="px-5 py-3 text-right text-sm font-semibold">{formatCurrency(i.amount)}</td>
-                  <td className="px-5 py-3 text-right text-sm text-success">{formatCurrency(i.paidAmount)}</td>
-                  <td className="px-5 py-3"><span className={`badge ${STATUS_BADGE[i.status]}`}>{i.status}</span></td>
-                  <td className="px-5 py-3">
+                  <td data-label="Invoice #" className="px-5 py-3 text-sm font-medium text-text-primary">{i.invoiceNumber}</td>
+                  <td data-label="Customer" className="px-5 py-3 text-sm text-text-secondary">{i.customerName || '-'}</td>
+                  <td data-label="Date" className="px-5 py-3 text-sm text-text-secondary">{formatDate(i.date)}</td>
+                  <td data-label="Due" className="px-5 py-3 text-sm text-text-secondary">{formatDate(i.dueDate)}</td>
+                  <td data-label="Amount" className="px-5 py-3 text-right text-sm font-semibold">{formatCurrency(i.amount)}</td>
+                  <td data-label="Paid" className="px-5 py-3 text-right text-sm text-success">{formatCurrency(i.paidAmount)}</td>
+                  <td data-label="Status" className="px-5 py-3"><span className={`badge ${STATUS_BADGE[i.status]}`}>{i.status}</span></td>
+                  <td className="px-5 py-3 cell-actions">
                     <div className="flex items-center gap-1 justify-end">
                       <button onClick={() => setViewItem(i)} title="View" className="btn-ghost !px-2 !py-1.5"><Eye size={15} /></button>
                       <button onClick={() => { setEditItem(i); setForm({ customerName: i.customerName || '', date: toDateInput(i.date), dueDate: toDateInput(i.dueDate), amount: String(i.amount), paidAmount: String(i.paidAmount), notes: i.notes || '' }); setShowAdd(true) }} title="Edit" className="btn-ghost !px-2 !py-1.5"><Edit size={15} /></button>

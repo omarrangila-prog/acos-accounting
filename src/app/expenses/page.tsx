@@ -171,7 +171,7 @@ export default function ExpensesPage() {
         </div>
 
         {loading ? <Loading /> : expenses.length === 0 ? <Empty title="No expenses found" /> : (
-          <table className="w-full">
+          <table className="rtable w-full">
             <thead><tr className="border-b border-border bg-surface-1">
               <th className="text-left px-5 py-3 table-header">Date</th>
               <th className="text-left px-5 py-3 table-header">Category</th>
@@ -183,12 +183,12 @@ export default function ExpensesPage() {
             <tbody>
               {expenses.map((e) => (
                 <tr key={e.id} className="border-b border-border/50 hover:bg-surface-1/50">
-                  <td className="px-5 py-3 text-sm text-text-secondary">{formatDate(e.date)}</td>
-                  <td className="px-5 py-3"><span className="badge badge-neutral">{expenseCategoryLabel(e.category)}</span></td>
-                  <td className="px-5 py-3 text-sm text-text-primary">{e.description}</td>
-                  <td className="px-5 py-3 text-sm text-text-secondary">{paymentMethodLabel(e.paymentMethod)}</td>
-                  <td className="px-5 py-3 text-right text-sm font-semibold text-danger">{formatCurrency(e.amount)}</td>
-                  <td className="px-5 py-3">
+                  <td data-label="Date" className="px-5 py-3 text-sm text-text-secondary">{formatDate(e.date)}</td>
+                  <td data-label="Category" className="px-5 py-3"><span className="badge badge-neutral">{expenseCategoryLabel(e.category)}</span></td>
+                  <td data-label="Description" className="px-5 py-3 text-sm text-text-primary">{e.description}</td>
+                  <td data-label="Payment" className="px-5 py-3 text-sm text-text-secondary">{paymentMethodLabel(e.paymentMethod)}</td>
+                  <td data-label="Amount" className="px-5 py-3 text-right text-sm font-semibold text-danger">{formatCurrency(e.amount)}</td>
+                  <td className="px-5 py-3 cell-actions">
                     <div className="flex items-center gap-0.5 justify-end">
                       <button onClick={() => setViewItem(e)} title="View" className="btn-ghost !px-2 !py-1.5"><Eye size={15} /></button>
                       <button onClick={() => { setEditItem(e); setForm({ category: e.category, description: e.description, amount: String(e.amount), paymentMethod: e.paymentMethod || 'cash', date: toDateInput(e.date), isRecurring: !!e.isRecurring, recurringPeriod: e.recurringPeriod || 'monthly', notes: e.notes || '' }); setShowAdd(true) }} title="Edit" className="btn-ghost !px-2 !py-1.5"><Edit size={15} /></button>
