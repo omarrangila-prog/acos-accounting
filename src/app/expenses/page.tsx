@@ -131,9 +131,9 @@ export default function ExpensesPage() {
   return (
     <div className="p-4 sm:p-6 space-y-4 sm:space-y-5 animate-enter">
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="card p-5"><p className="text-xs text-text-muted mb-1">Total Expenses</p><p className="text-2xl font-bold text-danger">{formatCurrency(total)}</p></div>
-        <div className="card p-5"><p className="text-xs text-text-muted mb-1">Recurring</p><p className="text-2xl font-bold text-warning">{formatCurrency(recurring)}</p></div>
-        <div className="card p-5"><p className="text-xs text-text-muted mb-1">Total Records</p><p className="text-2xl font-bold">{expenses.length}</p></div>
+        <div className="card-stat p-4 sm:p-5"><p className="text-xs text-text-muted mb-1">Total Expenses</p><p className="text-2xl font-bold text-danger">{formatCurrency(total)}</p></div>
+        <div className="card-stat p-4 sm:p-5"><p className="text-xs text-text-muted mb-1">Recurring</p><p className="text-2xl font-bold text-warning">{formatCurrency(recurring)}</p></div>
+        <div className="card-stat p-4 sm:p-5"><p className="text-xs text-text-muted mb-1">Total Records</p><p className="text-2xl font-bold">{expenses.length}</p></div>
       </div>
 
       {chartData.length > 0 && (

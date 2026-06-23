@@ -105,10 +105,10 @@ export default function InvoicesPage() {
   return (
     <div className="p-4 sm:p-6 space-y-4 sm:space-y-5 animate-enter">
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="card p-5"><p className="text-xs text-text-muted mb-1">Total Invoices</p><p className="text-2xl font-bold">{invoices.length}</p></div>
-        <div className="card p-5"><p className="text-xs text-text-muted mb-1">Total Billed</p><p className="text-2xl font-bold text-accent">{formatCurrency(totalBilled, true)}</p></div>
-        <div className="card p-5"><p className="text-xs text-text-muted mb-1">Total Collected</p><p className="text-2xl font-bold text-success">{formatCurrency(totalCollected, true)}</p></div>
-        <div className="card p-5"><p className="text-xs text-text-muted mb-1">Overdue</p><p className="text-2xl font-bold text-danger">{overdue}</p></div>
+        <div className="card-stat p-4 sm:p-5"><p className="text-xs text-text-muted mb-1">Total Invoices</p><p className="text-2xl font-bold">{invoices.length}</p></div>
+        <div className="card-stat p-4 sm:p-5"><p className="text-xs text-text-muted mb-1">Total Billed</p><p className="text-2xl font-bold text-accent">{formatCurrency(totalBilled, true)}</p></div>
+        <div className="card-stat p-4 sm:p-5"><p className="text-xs text-text-muted mb-1">Total Collected</p><p className="text-2xl font-bold text-success">{formatCurrency(totalCollected, true)}</p></div>
+        <div className="card-stat p-4 sm:p-5"><p className="text-xs text-text-muted mb-1">Overdue</p><p className="text-2xl font-bold text-danger">{overdue}</p></div>
       </div>
 
       <div className="card overflow-hidden">

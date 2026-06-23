@@ -89,10 +89,10 @@ export default function RecordsPage() {
   return (
     <div className="p-4 sm:p-6 space-y-4 sm:space-y-5 animate-enter">
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="card p-5"><p className="text-xs text-text-muted mb-1">Total Records</p><p className="text-2xl font-bold">{data.counts.total}</p></div>
-        <div className="card p-5"><p className="text-xs text-text-muted mb-1">Invoices</p><p className="text-2xl font-bold text-accent">{data.counts.invoices}</p></div>
-        <div className="card p-5"><p className="text-xs text-text-muted mb-1">Expenses</p><p className="text-2xl font-bold text-danger">{data.counts.expenses}</p></div>
-        <div className="card p-5"><p className="text-xs text-text-muted mb-1">PDC Cheques</p><p className="text-2xl font-bold" style={{ color: '#8B5CF6' }}>{data.counts.pdc}</p></div>
+        <div className="card-stat p-4 sm:p-5"><p className="text-xs text-text-muted mb-1">Total Records</p><p className="text-2xl font-bold">{data.counts.total}</p></div>
+        <div className="card-stat p-4 sm:p-5"><p className="text-xs text-text-muted mb-1">Invoices</p><p className="text-2xl font-bold text-accent">{data.counts.invoices}</p></div>
+        <div className="card-stat p-4 sm:p-5"><p className="text-xs text-text-muted mb-1">Expenses</p><p className="text-2xl font-bold text-danger">{data.counts.expenses}</p></div>
+        <div className="card-stat p-4 sm:p-5"><p className="text-xs text-text-muted mb-1">PDC Cheques</p><p className="text-2xl font-bold" style={{ color: '#8B5CF6' }}>{data.counts.pdc}</p></div>
       </div>
 
       <div className="card p-4">

@@ -113,10 +113,10 @@ export default function PDCPage() {
   return (
     <div className="p-4 sm:p-6 space-y-4 sm:space-y-5 animate-enter">
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="card p-5"><p className="text-xs text-text-muted mb-1">PDC Receivable</p><p className="text-2xl font-bold text-success">{formatCurrency(totalRec, true)}</p></div>
-        <div className="card p-5"><p className="text-xs text-text-muted mb-1">PDC Payable</p><p className="text-2xl font-bold text-danger">{formatCurrency(totalPay, true)}</p></div>
-        <div className="card p-5"><p className="text-xs text-text-muted mb-1">Pending Receivable</p><p className="text-2xl font-bold">{pendRec}</p></div>
-        <div className="card p-5"><p className="text-xs text-text-muted mb-1">Pending Payable</p><p className="text-2xl font-bold">{pendPay}</p></div>
+        <div className="card-stat p-4 sm:p-5"><p className="text-xs text-text-muted mb-1">PDC Receivable</p><p className="text-2xl font-bold text-success">{formatCurrency(totalRec, true)}</p></div>
+        <div className="card-stat p-4 sm:p-5"><p className="text-xs text-text-muted mb-1">PDC Payable</p><p className="text-2xl font-bold text-danger">{formatCurrency(totalPay, true)}</p></div>
+        <div className="card-stat p-4 sm:p-5"><p className="text-xs text-text-muted mb-1">Pending Receivable</p><p className="text-2xl font-bold">{pendRec}</p></div>
+        <div className="card-stat p-4 sm:p-5"><p className="text-xs text-text-muted mb-1">Pending Payable</p><p className="text-2xl font-bold">{pendPay}</p></div>
       </div>
 
       <div className="card overflow-hidden">

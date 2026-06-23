@@ -262,10 +262,10 @@ export default function CustomersPage() {
 
         {/* Summary cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="card p-5"><p className="text-[11px] font-semibold text-danger mb-1">TOTAL DEBIT</p><p className="text-2xl font-bold text-danger">{formatCurrency(totalDebit)}</p></div>
-          <div className="card p-5"><p className="text-[11px] font-semibold text-success mb-1">TOTAL CREDIT</p><p className="text-2xl font-bold text-success">{formatCurrency(totalCredit)}</p></div>
-          <div className="card p-5"><p className="text-[11px] font-semibold text-text-muted mb-1">NET BALANCE</p><p className={`text-2xl font-bold ${netBalance >= 0 ? 'text-danger' : 'text-success'}`}>{formatCurrency(Math.abs(netBalance))}</p></div>
-          <div className="card p-5"><p className="text-[11px] font-semibold text-text-muted mb-1">STATUS</p><span className={`badge ${netBalance > 0 ? 'badge-danger' : netBalance < 0 ? 'badge-success' : 'badge-neutral'} mt-1`}>{statusLabel}</span></div>
+          <div className="card-stat p-4 sm:p-5"><p className="text-[11px] font-semibold text-danger mb-1">TOTAL DEBIT</p><p className="text-2xl font-bold text-danger">{formatCurrency(totalDebit)}</p></div>
+          <div className="card-stat p-4 sm:p-5"><p className="text-[11px] font-semibold text-success mb-1">TOTAL CREDIT</p><p className="text-2xl font-bold text-success">{formatCurrency(totalCredit)}</p></div>
+          <div className="card-stat p-4 sm:p-5"><p className="text-[11px] font-semibold text-text-muted mb-1">NET BALANCE</p><p className={`text-2xl font-bold ${netBalance >= 0 ? 'text-danger' : 'text-success'}`}>{formatCurrency(Math.abs(netBalance))}</p></div>
+          <div className="card-stat p-4 sm:p-5"><p className="text-[11px] font-semibold text-text-muted mb-1">STATUS</p><span className={`badge ${netBalance > 0 ? 'badge-danger' : netBalance < 0 ? 'badge-success' : 'badge-neutral'} mt-1`}>{statusLabel}</span></div>
         </div>
 
         <div className="card overflow-hidden">
@@ -346,10 +346,10 @@ export default function CustomersPage() {
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="card p-5"><p className="text-xs text-text-muted mb-1">Total Parties</p><p className="text-2xl font-bold">{customers.length}</p></div>
-        <div className="card p-5"><p className="text-[11px] font-semibold text-danger mb-1">TOTAL DEBIT</p><p className="text-2xl font-bold text-danger">{formatCurrency(totalDebit)}</p><p className="text-xs text-text-muted">All receivables</p></div>
-        <div className="card p-5"><p className="text-[11px] font-semibold text-success mb-1">TOTAL CREDIT</p><p className="text-2xl font-bold text-success">{formatCurrency(totalCredit)}</p><p className="text-xs text-text-muted">All payables</p></div>
-        <div className="card p-5"><p className="text-[11px] font-semibold text-text-muted mb-1">NET BALANCE</p><p className="text-2xl font-bold">{formatCurrency(Math.abs(net))}</p><span className="badge badge-neutral mt-1">{net === 0 ? '— Settled' : net > 0 ? 'Receivable' : 'Payable'}</span></div>
+        <div className="card-stat p-4 sm:p-5"><p className="text-xs text-text-muted mb-1">Total Parties</p><p className="text-2xl font-bold">{customers.length}</p></div>
+        <div className="card-stat p-4 sm:p-5"><p className="text-[11px] font-semibold text-danger mb-1">TOTAL DEBIT</p><p className="text-2xl font-bold text-danger">{formatCurrency(totalDebit)}</p><p className="text-xs text-text-muted">All receivables</p></div>
+        <div className="card-stat p-4 sm:p-5"><p className="text-[11px] font-semibold text-success mb-1">TOTAL CREDIT</p><p className="text-2xl font-bold text-success">{formatCurrency(totalCredit)}</p><p className="text-xs text-text-muted">All payables</p></div>
+        <div className="card-stat p-4 sm:p-5"><p className="text-[11px] font-semibold text-text-muted mb-1">NET BALANCE</p><p className="text-2xl font-bold">{formatCurrency(Math.abs(net))}</p><span className="badge badge-neutral mt-1">{net === 0 ? '— Settled' : net > 0 ? 'Receivable' : 'Payable'}</span></div>
       </div>
 
       <div className="card overflow-hidden">

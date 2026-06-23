@@ -49,11 +49,13 @@
 }
 
 @layer components {
-  .card { @apply bg-surface-0 rounded-2xl border border-border shadow-card; }
+  .card { @apply bg-surface-0 rounded-2xl border border-border shadow-card transition-shadow duration-200; }
+  /* Stat / summary cards get a subtle premium hover lift. */
+  .card-stat { @apply card hover:shadow-card-hover hover:-translate-y-0.5 transition-all duration-200; }
 
-  .btn-primary { @apply inline-flex items-center gap-2 px-4 py-2 bg-accent text-white rounded-xl text-sm font-medium hover:bg-accent-dark transition-all duration-150 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed; }
-  .btn-secondary { @apply inline-flex items-center gap-2 px-4 py-2 bg-surface-2 text-text-primary rounded-xl text-sm font-medium border border-border hover:bg-surface-3 transition-all duration-150; }
-  .btn-ghost { @apply inline-flex items-center gap-2 px-3 py-2 text-text-secondary rounded-xl text-sm font-medium hover:bg-surface-2 transition-all duration-150; }
+  .btn-primary { @apply inline-flex items-center justify-center gap-2 px-4 py-2 bg-accent text-white rounded-xl text-sm font-medium hover:bg-accent-dark transition-all duration-150 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 disabled:opacity-60 disabled:cursor-not-allowed; }
+  .btn-secondary { @apply inline-flex items-center justify-center gap-2 px-4 py-2 bg-surface-2 text-text-primary rounded-xl text-sm font-medium border border-border hover:bg-surface-3 transition-all duration-150 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 disabled:opacity-60 disabled:cursor-not-allowed; }
+  .btn-ghost { @apply inline-flex items-center justify-center gap-2 px-3 py-2 text-text-secondary rounded-xl text-sm font-medium hover:bg-surface-2 transition-all duration-150 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent; }
 
   .input { @apply w-full px-3 py-2 text-sm bg-surface-0 border border-border rounded-xl text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition-all duration-150; }
   .label { @apply block text-xs font-medium text-text-secondary mb-1.5; }

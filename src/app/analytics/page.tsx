@@ -40,10 +40,10 @@ export default function AnalyticsPage() {
   return (
     <div className="p-4 sm:p-6 space-y-4 sm:space-y-5 animate-enter">
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="card p-5"><p className="text-xs text-text-muted mb-1">6-Month Revenue</p><p className="text-2xl font-bold text-success">{formatCurrency(revenue6, true)}</p></div>
-        <div className="card p-5"><p className="text-xs text-text-muted mb-1">6-Month Expenses</p><p className="text-2xl font-bold text-danger">{formatCurrency(expenses6, true)}</p></div>
-        <div className="card p-5"><p className="text-xs text-text-muted mb-1">Net Profit (6M)</p><p className={`text-2xl font-bold ${netProfit6 >= 0 ? 'text-success' : 'text-danger'}`}>{formatCurrency(netProfit6, true)}</p></div>
-        <div className="card p-5"><p className="text-xs text-text-muted mb-1">Best Month</p><p className="text-2xl font-bold">{best && bestProfit !== 0 ? best.label : '-'}</p><p className="text-xs text-success">{formatCurrency(bestProfit, true)} profit</p></div>
+        <div className="card-stat p-4 sm:p-5"><p className="text-xs text-text-muted mb-1">6-Month Revenue</p><p className="text-2xl font-bold text-success">{formatCurrency(revenue6, true)}</p></div>
+        <div className="card-stat p-4 sm:p-5"><p className="text-xs text-text-muted mb-1">6-Month Expenses</p><p className="text-2xl font-bold text-danger">{formatCurrency(expenses6, true)}</p></div>
+        <div className="card-stat p-4 sm:p-5"><p className="text-xs text-text-muted mb-1">Net Profit (6M)</p><p className={`text-2xl font-bold ${netProfit6 >= 0 ? 'text-success' : 'text-danger'}`}>{formatCurrency(netProfit6, true)}</p></div>
+        <div className="card-stat p-4 sm:p-5"><p className="text-xs text-text-muted mb-1">Best Month</p><p className="text-2xl font-bold">{best && bestProfit !== 0 ? best.label : '-'}</p><p className="text-xs text-success">{formatCurrency(bestProfit, true)} profit</p></div>
       </div>
 
       <div className="card p-5">
