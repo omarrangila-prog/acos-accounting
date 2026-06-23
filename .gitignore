@@ -12,3 +12,6 @@ prisma/dev.db-journal
 dev.db
 .env.local
 .vercel
+
+# TypeScript incremental build info
+*.tsbuildinfo

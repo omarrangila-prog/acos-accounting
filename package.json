@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && next build",
+    "build": "prisma generate && prisma db push && next build",
     "start": "next start -p ${PORT:-3000}",
     "postinstall": "prisma generate",
     "db:push": "prisma db push",
@@ -12,8 +12,6 @@
     "db:seed-customers": "node prisma/seed-customers.mjs"
   },
   "dependencies": {
-    "@libsql/client": "^0.8.1",
-    "@prisma/adapter-libsql": "^6.19.3",
     "@prisma/client": "^6.19.3",
     "date-fns": "^3.6.0",
     "exceljs": "^4.4.0",
