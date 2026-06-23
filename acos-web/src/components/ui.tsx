@@ -29,6 +29,26 @@ export function Modal({ open, onClose, title, children, size = 'md' }: any) {
   )
 }
 
+// Read-only "View" modal: shows a record as label/value rows. Reused by
+// Expenses, PDC, Invoices for the Eye/View action.
+export function DetailModal({ open, onClose, title, rows }: { open: boolean; onClose: () => void; title: string; rows: { label: string; value: React.ReactNode }[] }) {
+  return (
+    <Modal open={open} onClose={onClose} title={title}>
+      <div className="divide-y divide-border">
+        {rows.map((r, i) => (
+          <div key={i} className="flex items-start justify-between gap-4 py-2.5">
+            <span className="text-xs font-medium text-text-muted">{r.label}</span>
+            <span className="text-sm text-text-primary text-right">{r.value ?? '-'}</span>
+          </div>
+        ))}
+      </div>
+      <div className="flex justify-end pt-4">
+        <button className="btn-secondary" onClick={onClose}>Close</button>
+      </div>
+    </Modal>
+  )
+}
+
 export function Loading({ label = 'Loading...' }: { label?: string }) {
   return (
     <div className="flex items-center justify-center py-14 text-text-muted gap-2">

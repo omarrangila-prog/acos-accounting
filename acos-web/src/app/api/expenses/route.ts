@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { prisma, insensitive } from '@/lib/prisma'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
     const expenses = await prisma.expense.findMany({
       where: {
         AND: [
-          search ? { description: { contains: search, mode: 'insensitive' } } : {},
+          search ? { description: { contains: search, ...insensitive } } : {},
           category ? { category } : {},
         ],
       },

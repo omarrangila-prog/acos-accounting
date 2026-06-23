@@ -1,14 +1,14 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Plus, Search, Trash2, Edit, Download, RefreshCw, FileDown } from 'lucide-react'
+import { Plus, Search, Trash2, Edit, Download, RefreshCw, FileDown, Eye } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
 import { api } from '@/lib/api'
 import { downloadExcel } from '@/lib/export'
 import { printTableReport, fmt } from '@/lib/print'
 import { useShell } from '@/components/AppShell'
-import { Modal, Loading, Empty } from '@/components/ui'
+import { Modal, Loading, Empty, DetailModal } from '@/components/ui'
 import {
   formatCurrency, formatDate, expenseCategoryLabel, EXPENSE_CATEGORIES, CAT_COLORS,
   PAYMENT_METHODS, paymentMethodLabel, toDateInput,
@@ -25,6 +25,7 @@ export default function ExpensesPage() {
   const [filterCat, setFilterCat] = useState('')
   const [showAdd, setShowAdd] = useState(false)
   const [editItem, setEditItem] = useState<any>(null)
+  const [viewItem, setViewItem] = useState<any>(null)
   const [form, setForm] = useState({ ...blank })
   const searchRef = useRef(search), catRef = useRef(filterCat)
   searchRef.current = search; catRef.current = filterCat
@@ -188,9 +189,10 @@ export default function ExpensesPage() {
                   <td className="px-5 py-3 text-sm text-text-secondary">{paymentMethodLabel(e.paymentMethod)}</td>
                   <td className="px-5 py-3 text-right text-sm font-semibold text-danger">{formatCurrency(e.amount)}</td>
                   <td className="px-5 py-3">
-                    <div className="flex items-center gap-1 justify-end">
-                      <button onClick={() => { setEditItem(e); setForm({ category: e.category, description: e.description, amount: String(e.amount), paymentMethod: e.paymentMethod || 'cash', date: toDateInput(e.date), isRecurring: !!e.isRecurring, recurringPeriod: e.recurringPeriod || 'monthly', notes: e.notes || '' }); setShowAdd(true) }} className="btn-ghost !px-2 !py-1.5"><Edit size={13} /></button>
-                      <button onClick={() => remove(e.id)} className="btn-ghost !px-2 !py-1.5 text-danger"><Trash2 size={13} /></button>
+                    <div className="flex items-center gap-0.5 justify-end">
+                      <button onClick={() => setViewItem(e)} title="View" className="btn-ghost !px-2 !py-1.5"><Eye size={15} /></button>
+                      <button onClick={() => { setEditItem(e); setForm({ category: e.category, description: e.description, amount: String(e.amount), paymentMethod: e.paymentMethod || 'cash', date: toDateInput(e.date), isRecurring: !!e.isRecurring, recurringPeriod: e.recurringPeriod || 'monthly', notes: e.notes || '' }); setShowAdd(true) }} title="Edit" className="btn-ghost !px-2 !py-1.5"><Edit size={15} /></button>
+                      <button onClick={() => remove(e.id)} title="Delete" className="btn-ghost !px-2 !py-1.5 text-danger"><Trash2 size={15} /></button>
                     </div>
                   </td>
                 </tr>
@@ -235,6 +237,17 @@ export default function ExpensesPage() {
           </div>
         </div>
       </Modal>
+
+      <DetailModal open={!!viewItem} onClose={() => setViewItem(null)} title="Expense Details" rows={viewItem ? [
+        { label: 'Date', value: formatDate(viewItem.date) },
+        { label: 'Category', value: expenseCategoryLabel(viewItem.category) },
+        { label: 'Description', value: viewItem.description },
+        { label: 'Amount', value: formatCurrency(viewItem.amount) },
+        { label: 'Payment Method', value: paymentMethodLabel(viewItem.paymentMethod) },
+        { label: 'Recurring', value: viewItem.isRecurring ? `Yes (${viewItem.recurringPeriod || 'monthly'})` : 'No' },
+        { label: 'Notes', value: viewItem.notes || '-' },
+        { label: 'Created', value: formatDate(viewItem.createdAt) },
+      ] : []} />
     </div>
   )
 }

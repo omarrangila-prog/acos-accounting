@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { prisma, insensitive } from '@/lib/prisma'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
   try {
     const search = req.nextUrl.searchParams.get('search') || ''
     const customers = await prisma.customer.findMany({
-      where: search ? { name: { contains: search, mode: 'insensitive' } } : undefined,
+      where: search ? { name: { contains: search, ...insensitive } } : undefined,
       include: { transactions: true },
       orderBy: { createdAt: 'desc' },
     })

@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { Plus, Search, Trash2, Download, Printer, FileText, Users, RefreshCw, ArrowLeft } from 'lucide-react'
+import { Plus, Search, Trash2, Download, Printer, FileText, Users, RefreshCw, ArrowLeft, Eye, PlusCircle, Pencil } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { api } from '@/lib/api'
 import { downloadExcel } from '@/lib/export'
@@ -24,6 +24,7 @@ export default function CustomersPage() {
   const [showCust, setShowCust] = useState(false)
   const [showTxn, setShowTxn] = useState(false)
   const [custForm, setCustForm] = useState({ ...blankCust })
+  const [editCustId, setEditCustId] = useState<string | null>(null)
   const [txnForm, setTxnForm] = useState({ ...blankTxn })
   const [ledger, setLedger] = useState<any>(null) // selected customer detail
   const [stmtFrom, setStmtFrom] = useState('')
@@ -50,10 +51,22 @@ export default function CustomersPage() {
   const saveCust = async () => {
     if (!custForm.name) return toast.error('Customer name required')
     try {
-      const res = await api.addCustomer({ ...custForm, openingBalance: Number(custForm.openingBalance) || 0 })
-      if (res?.success) { toast.success('Customer added'); setShowCust(false); setCustForm({ ...blankCust }); load() }
+      const payload = { ...custForm, openingBalance: Number(custForm.openingBalance) || 0 }
+      const res = editCustId ? await api.updateCustomer(editCustId, payload) : await api.addCustomer(payload)
+      if (res?.success) {
+        toast.success(editCustId ? 'Customer updated' : 'Customer added')
+        setShowCust(false); setCustForm({ ...blankCust }); setEditCustId(null); load()
+      }
     } catch (e: any) { toast.error(e.message || 'Failed') }
   }
+
+  const openAddCust = () => { setEditCustId(null); setCustForm({ ...blankCust }); setShowCust(true) }
+  const openEditCust = (c: any) => {
+    setEditCustId(c.id)
+    setCustForm({ name: c.name, phone: c.phone || '', address: c.address || '', openingBalance: String(c.openingBalance ?? ''), balanceType: c.balanceType || 'debit' })
+    setShowCust(true)
+  }
+  const openAddTxnFor = (id: string) => { setTxnForm({ ...blankTxn, customerId: id }); setShowTxn(true) }
 
   const saveTxn = async () => {
     if (!txnForm.customerId) return toast.error('Select a party')
@@ -68,6 +81,12 @@ export default function CustomersPage() {
     if (!confirm('Delete this party? Its transactions will be removed.')) return
     try { await api.deleteCustomer(id); toast.success('Deleted'); load() }
     catch (e: any) { toast.error(e.message || 'Cannot delete') }
+  }
+
+  const removeTxn = async (txnId: string, customerId: string) => {
+    if (!confirm('Delete this transaction?')) return
+    try { await api.deleteTransaction(txnId); toast.success('Transaction deleted'); load(); openLedger(customerId) }
+    catch (e: any) { toast.error(e.message || 'Failed') }
   }
 
   const openLedger = async (id: string) => {
@@ -217,6 +236,7 @@ export default function CustomersPage() {
               <th className="text-right px-5 py-3 table-header">Debit (-)</th>
               <th className="text-right px-5 py-3 table-header">Credit (+)</th>
               <th className="text-right px-5 py-3 table-header">Balance</th>
+              <th className="px-5 py-3 no-print" />
             </tr></thead>
             <tbody>
               <tr className="border-b border-border/50 bg-surface-1/60">
@@ -225,6 +245,7 @@ export default function CustomersPage() {
                 <td className="px-5 py-3 text-right text-sm">{opening > 0 ? formatCurrency(opening) : '-'}</td>
                 <td className="px-5 py-3 text-right text-sm">{opening < 0 ? formatCurrency(-opening) : '-'}</td>
                 <td className="px-5 py-3 text-right text-sm font-medium">{formatCurrency(Math.abs(opening))}</td>
+                <td className="px-5 py-3 no-print" />
               </tr>
               {rows.map((r: any) => (
                 <tr key={r.id} className="border-b border-border/50 hover:bg-surface-1/50">
@@ -233,6 +254,9 @@ export default function CustomersPage() {
                   <td className="px-5 py-3 text-right text-sm text-danger">{r.type === 'debit' ? formatCurrency(r.amount) : '-'}</td>
                   <td className="px-5 py-3 text-right text-sm text-success">{r.type === 'credit' ? formatCurrency(r.amount) : '-'}</td>
                   <td className="px-5 py-3 text-right text-sm font-medium">{formatCurrency(Math.abs(r.balance))}</td>
+                  <td className="px-5 py-3 no-print">
+                    <button onClick={() => removeTxn(r.id, ledger.id)} title="Delete transaction" className="btn-ghost !px-2 !py-1.5 text-danger"><Trash2 size={14} /></button>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -242,6 +266,7 @@ export default function CustomersPage() {
                 <td className="px-5 py-3 text-right text-sm text-danger">{formatCurrency(totalDebit)}</td>
                 <td className="px-5 py-3 text-right text-sm text-success">{formatCurrency(totalCredit)}</td>
                 <td className="px-5 py-3 text-right text-sm">{formatCurrency(Math.abs(netBalance))}</td>
+                <td className="px-5 py-3 no-print" />
               </tr>
             </tfoot>
           </table>
@@ -272,7 +297,7 @@ export default function CustomersPage() {
           </button>
           <button onClick={handlePrint} className="btn-secondary"><Printer size={16} /> Print Report</button>
           <button onClick={() => { setTxnForm({ ...blankTxn }); setShowTxn(true) }} className="btn-secondary"><FileText size={16} /> Add Transaction</button>
-          <button onClick={() => { setCustForm({ ...blankCust }); setShowCust(true) }} className="btn-primary"><Plus size={16} /> Add Customer</button>
+          <button onClick={openAddCust} className="btn-primary"><Plus size={16} /> Add Customer</button>
         </div>
       </div>
 
@@ -301,7 +326,7 @@ export default function CustomersPage() {
           <div className="flex flex-col items-center gap-3 py-16">
             <Users size={40} className="text-text-muted opacity-40" />
             <p className="text-sm text-text-muted">No parties yet.</p>
-            <button onClick={() => { setCustForm({ ...blankCust }); setShowCust(true) }} className="btn-primary"><Plus size={16} /> Add Customer</button>
+            <button onClick={openAddCust} className="btn-primary"><Plus size={16} /> Add Customer</button>
           </div>
         ) : (
           <table className="w-full">
@@ -314,13 +339,18 @@ export default function CustomersPage() {
             </tr></thead>
             <tbody>
               {filtered.map((c) => (
-                <tr key={c.id} className="border-b border-border/50 hover:bg-surface-1/50 cursor-pointer" onClick={() => openLedger(c.id)}>
-                  <td className="px-5 py-3 text-sm font-medium text-text-primary">{c.name}</td>
+                <tr key={c.id} className="border-b border-border/50 hover:bg-surface-1/50">
+                  <td className="px-5 py-3 text-sm font-medium text-text-primary cursor-pointer" onClick={() => openLedger(c.id)}>{c.name}</td>
                   <td className="px-5 py-3 text-sm text-text-secondary">{c.phone || '-'}</td>
                   <td className={`px-5 py-3 text-right text-sm font-semibold ${c.currentBalance >= 0 ? 'text-danger' : 'text-success'}`}>{formatCurrency(Math.abs(c.currentBalance))}</td>
                   <td className="px-5 py-3"><span className={`badge ${c.currentBalance >= 0 ? 'badge-danger' : 'badge-success'}`}>{c.currentBalance >= 0 ? 'Debit' : 'Credit'}</span></td>
-                  <td className="px-5 py-3" onClick={(e) => e.stopPropagation()}>
-                    <button onClick={() => removeCust(c.id)} className="btn-ghost !px-2 !py-1.5 text-danger"><Trash2 size={13} /></button>
+                  <td className="px-5 py-3">
+                    <div className="flex items-center gap-0.5 justify-end">
+                      <button onClick={() => openLedger(c.id)} title="View statement" className="btn-ghost !px-2 !py-1.5"><Eye size={15} /></button>
+                      <button onClick={() => openAddTxnFor(c.id)} title="Add transaction" className="btn-ghost !px-2 !py-1.5 text-accent"><PlusCircle size={15} /></button>
+                      <button onClick={() => openEditCust(c)} title="Edit customer" className="btn-ghost !px-2 !py-1.5"><Pencil size={15} /></button>
+                      <button onClick={() => removeCust(c.id)} title="Delete customer" className="btn-ghost !px-2 !py-1.5 text-danger"><Trash2 size={15} /></button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -329,7 +359,7 @@ export default function CustomersPage() {
         )}
       </div>
 
-      <Modal open={showCust} onClose={() => setShowCust(false)} title="Add Customer">
+      <Modal open={showCust} onClose={() => { setShowCust(false); setEditCustId(null) }} title={editCustId ? 'Edit Customer' : 'Add Customer'}>
         <div className="space-y-3">
           <div><label className="label">Customer / Party Name *</label><input className="input" value={custForm.name} onChange={(e) => setCustForm((p) => ({ ...p, name: e.target.value }))} /></div>
           <div className="grid grid-cols-2 gap-3">
@@ -344,8 +374,8 @@ export default function CustomersPage() {
           <div><label className="label">Phone</label><input className="input" value={custForm.phone} onChange={(e) => setCustForm((p) => ({ ...p, phone: e.target.value }))} /></div>
           <div><label className="label">Address</label><textarea className="input" rows={2} value={custForm.address} onChange={(e) => setCustForm((p) => ({ ...p, address: e.target.value }))} /></div>
           <div className="flex justify-end gap-2 pt-2">
-            <button className="btn-secondary" onClick={() => setShowCust(false)}>Cancel</button>
-            <button className="btn-primary" onClick={saveCust}>Add Customer</button>
+            <button className="btn-secondary" onClick={() => { setShowCust(false); setEditCustId(null) }}>Cancel</button>
+            <button className="btn-primary" onClick={saveCust}>{editCustId ? 'Save Changes' : 'Add Customer'}</button>
           </div>
         </div>
       </Modal>

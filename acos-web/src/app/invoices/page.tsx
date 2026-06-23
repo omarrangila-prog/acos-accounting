@@ -1,13 +1,13 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { Plus, Search, Trash2, Edit, Download, RefreshCw, FileDown } from 'lucide-react'
+import { Plus, Search, Trash2, Edit, Download, RefreshCw, FileDown, Eye } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { api } from '@/lib/api'
 import { downloadExcel } from '@/lib/export'
 import { printTableReport, fmt } from '@/lib/print'
 import { useShell } from '@/components/AppShell'
-import { Modal, Loading, Empty } from '@/components/ui'
+import { Modal, Loading, Empty, DetailModal } from '@/components/ui'
 import { formatCurrency, formatDate, toDateInput } from '@/lib/utils'
 
 const blank = { customerName: '', date: new Date().toISOString().split('T')[0], dueDate: '', amount: '', paidAmount: '', notes: '' }
@@ -22,6 +22,7 @@ export default function InvoicesPage() {
   const [status, setStatus] = useState('')
   const [showAdd, setShowAdd] = useState(false)
   const [editItem, setEditItem] = useState<any>(null)
+  const [viewItem, setViewItem] = useState<any>(null)
   const [form, setForm] = useState({ ...blank })
 
   const load = useCallback(() => {
@@ -154,8 +155,9 @@ export default function InvoicesPage() {
                   <td className="px-5 py-3"><span className={`badge ${STATUS_BADGE[i.status]}`}>{i.status}</span></td>
                   <td className="px-5 py-3">
                     <div className="flex items-center gap-1 justify-end">
-                      <button onClick={() => { setEditItem(i); setForm({ customerName: i.customerName || '', date: toDateInput(i.date), dueDate: toDateInput(i.dueDate), amount: String(i.amount), paidAmount: String(i.paidAmount), notes: i.notes || '' }); setShowAdd(true) }} className="btn-ghost !px-2 !py-1.5"><Edit size={13} /></button>
-                      <button onClick={() => remove(i.id)} className="btn-ghost !px-2 !py-1.5 text-danger"><Trash2 size={13} /></button>
+                      <button onClick={() => setViewItem(i)} title="View" className="btn-ghost !px-2 !py-1.5"><Eye size={15} /></button>
+                      <button onClick={() => { setEditItem(i); setForm({ customerName: i.customerName || '', date: toDateInput(i.date), dueDate: toDateInput(i.dueDate), amount: String(i.amount), paidAmount: String(i.paidAmount), notes: i.notes || '' }); setShowAdd(true) }} title="Edit" className="btn-ghost !px-2 !py-1.5"><Edit size={15} /></button>
+                      <button onClick={() => remove(i.id)} title="Delete" className="btn-ghost !px-2 !py-1.5 text-danger"><Trash2 size={15} /></button>
                     </div>
                   </td>
                 </tr>
@@ -183,6 +185,18 @@ export default function InvoicesPage() {
           </div>
         </div>
       </Modal>
+
+      <DetailModal open={!!viewItem} onClose={() => setViewItem(null)} title="Invoice Details" rows={viewItem ? [
+        { label: 'Invoice #', value: viewItem.invoiceNumber },
+        { label: 'Customer', value: viewItem.customerName || '-' },
+        { label: 'Date', value: formatDate(viewItem.date) },
+        { label: 'Due Date', value: formatDate(viewItem.dueDate) },
+        { label: 'Amount', value: formatCurrency(viewItem.amount) },
+        { label: 'Paid', value: formatCurrency(viewItem.paidAmount) },
+        { label: 'Balance', value: formatCurrency(viewItem.amount - viewItem.paidAmount) },
+        { label: 'Status', value: viewItem.status },
+        { label: 'Notes', value: viewItem.notes || '-' },
+      ] : []} />
     </div>
   )
 }
