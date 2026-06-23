@@ -1,0 +1,13 @@
+node_modules
+.next
+.env
+.env.local
+*.log
+.DS_Store
+
+# local dev (sqlite) — not for deploy
+prisma/schema.local.prisma
+prisma/dev.db
+prisma/dev.db-journal
+dev.db
+.env.local
