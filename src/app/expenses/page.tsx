@@ -170,7 +170,7 @@ export default function ExpensesPage() {
           </div>
         </div>
 
-        {loading ? <Loading /> : expenses.length === 0 ? <Empty title="No expenses found" /> : (
+        {loading ? <Loading /> : expenses.length === 0 ? <Empty aria-label="No expenses found" title="No expenses found" /> : (
           <table className="rtable w-full">
             <thead><tr className="border-b border-border bg-surface-1">
               <th className="text-left px-5 py-3 table-header">Date</th>
@@ -190,9 +190,9 @@ export default function ExpensesPage() {
                   <td data-label="Amount" className="px-5 py-3 text-right text-sm font-semibold text-danger">{formatCurrency(e.amount)}</td>
                   <td className="px-5 py-3 cell-actions">
                     <div className="flex items-center gap-0.5 justify-end">
-                      <button onClick={() => setViewItem(e)} title="View" className="btn-ghost !px-2 !py-1.5"><Eye size={15} /></button>
-                      <button onClick={() => { setEditItem(e); setForm({ category: e.category, description: e.description, amount: String(e.amount), paymentMethod: e.paymentMethod || 'cash', date: toDateInput(e.date), isRecurring: !!e.isRecurring, recurringPeriod: e.recurringPeriod || 'monthly', notes: e.notes || '' }); setShowAdd(true) }} title="Edit" className="btn-ghost !px-2 !py-1.5"><Edit size={15} /></button>
-                      <button onClick={() => remove(e.id)} title="Delete" className="btn-ghost !px-2 !py-1.5 text-danger"><Trash2 size={15} /></button>
+                      <button onClick={() => setViewItem(e)} aria-label="View" title="View" className="btn-ghost !px-2 !py-1.5"><Eye size={15} /></button>
+                      <button onClick={() => { setEditItem(e); setForm({ category: e.category, description: e.description, amount: String(e.amount), paymentMethod: e.paymentMethod || 'cash', date: toDateInput(e.date), isRecurring: !!e.isRecurring, recurringPeriod: e.recurringPeriod || 'monthly', notes: e.notes || '' }); setShowAdd(true) }} aria-label="Edit" title="Edit" className="btn-ghost !px-2 !py-1.5"><Edit size={15} /></button>
+                      <button onClick={() => remove(e.id)} aria-label="Delete" title="Delete" className="btn-ghost !px-2 !py-1.5 text-danger"><Trash2 size={15} /></button>
                     </div>
                   </td>
                 </tr>
@@ -238,7 +238,7 @@ export default function ExpensesPage() {
         </div>
       </Modal>
 
-      <DetailModal open={!!viewItem} onClose={() => setViewItem(null)} title="Expense Details" rows={viewItem ? [
+      <DetailModal open={!!viewItem} onClose={() => setViewItem(null)} aria-label="Expense Details" title="Expense Details" rows={viewItem ? [
         { label: 'Date', value: formatDate(viewItem.date) },
         { label: 'Category', value: expenseCategoryLabel(viewItem.category) },
         { label: 'Description', value: viewItem.description },

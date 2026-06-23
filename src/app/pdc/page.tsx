@@ -163,9 +163,9 @@ export default function PDCPage() {
                   </td>
                   <td className="px-5 py-3 cell-actions">
                     <div className="flex items-center gap-1 justify-end">
-                      <button onClick={() => setViewItem(p)} title="View" className="btn-ghost !px-2 !py-1.5"><Eye size={15} /></button>
-                      <button onClick={() => { setEditItem(p); setForm({ pdcType: p.pdcType, partyName: p.partyName, chequeNumber: p.chequeNumber || '', bank: p.bank || '', amount: String(p.amount), chequeDate: toDateInput(p.chequeDate), status: p.status, remarks: p.remarks || '' }); setShowAdd(true) }} title="Edit" className="btn-ghost !px-2 !py-1.5"><Pencil size={15} /></button>
-                      <button onClick={() => remove(p.id)} title="Delete" className="btn-ghost !px-2 !py-1.5 text-danger"><Trash2 size={15} /></button>
+                      <button onClick={() => setViewItem(p)} aria-label="View" title="View" className="btn-ghost !px-2 !py-1.5"><Eye size={15} /></button>
+                      <button onClick={() => { setEditItem(p); setForm({ pdcType: p.pdcType, partyName: p.partyName, chequeNumber: p.chequeNumber || '', bank: p.bank || '', amount: String(p.amount), chequeDate: toDateInput(p.chequeDate), status: p.status, remarks: p.remarks || '' }); setShowAdd(true) }} aria-label="Edit" title="Edit" className="btn-ghost !px-2 !py-1.5"><Pencil size={15} /></button>
+                      <button onClick={() => remove(p.id)} aria-label="Delete" title="Delete" className="btn-ghost !px-2 !py-1.5 text-danger"><Trash2 size={15} /></button>
                     </div>
                   </td>
                 </tr>
@@ -204,7 +204,7 @@ export default function PDCPage() {
         </div>
       </Modal>
 
-      <DetailModal open={!!viewItem} onClose={() => setViewItem(null)} title="PDC Cheque Details" rows={viewItem ? [
+      <DetailModal open={!!viewItem} onClose={() => setViewItem(null)} aria-label="PDC Cheque Details" title="PDC Cheque Details" rows={viewItem ? [
         { label: 'Type', value: viewItem.pdcType === 'payable' ? 'Payable' : 'Receivable' },
         { label: 'Party Name', value: viewItem.partyName },
         { label: 'Cheque Number', value: viewItem.chequeNumber || '-' },

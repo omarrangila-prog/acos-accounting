@@ -131,7 +131,7 @@ export default function InvoicesPage() {
           </div>
         </div>
 
-        {loading ? <Loading /> : invoices.length === 0 ? <Empty title="No invoices yet." /> : (
+        {loading ? <Loading /> : invoices.length === 0 ? <Empty aria-label="No invoices yet." title="No invoices yet." /> : (
           <table className="rtable w-full">
             <thead><tr className="border-b border-border bg-surface-1">
               <th className="text-left px-5 py-3 table-header">Invoice #</th>
@@ -155,9 +155,9 @@ export default function InvoicesPage() {
                   <td data-label="Status" className="px-5 py-3"><span className={`badge ${STATUS_BADGE[i.status]}`}>{i.status}</span></td>
                   <td className="px-5 py-3 cell-actions">
                     <div className="flex items-center gap-1 justify-end">
-                      <button onClick={() => setViewItem(i)} title="View" className="btn-ghost !px-2 !py-1.5"><Eye size={15} /></button>
-                      <button onClick={() => { setEditItem(i); setForm({ customerName: i.customerName || '', date: toDateInput(i.date), dueDate: toDateInput(i.dueDate), amount: String(i.amount), paidAmount: String(i.paidAmount), notes: i.notes || '' }); setShowAdd(true) }} title="Edit" className="btn-ghost !px-2 !py-1.5"><Edit size={15} /></button>
-                      <button onClick={() => remove(i.id)} title="Delete" className="btn-ghost !px-2 !py-1.5 text-danger"><Trash2 size={15} /></button>
+                      <button onClick={() => setViewItem(i)} aria-label="View" title="View" className="btn-ghost !px-2 !py-1.5"><Eye size={15} /></button>
+                      <button onClick={() => { setEditItem(i); setForm({ customerName: i.customerName || '', date: toDateInput(i.date), dueDate: toDateInput(i.dueDate), amount: String(i.amount), paidAmount: String(i.paidAmount), notes: i.notes || '' }); setShowAdd(true) }} aria-label="Edit" title="Edit" className="btn-ghost !px-2 !py-1.5"><Edit size={15} /></button>
+                      <button onClick={() => remove(i.id)} aria-label="Delete" title="Delete" className="btn-ghost !px-2 !py-1.5 text-danger"><Trash2 size={15} /></button>
                     </div>
                   </td>
                 </tr>
@@ -186,7 +186,7 @@ export default function InvoicesPage() {
         </div>
       </Modal>
 
-      <DetailModal open={!!viewItem} onClose={() => setViewItem(null)} title="Invoice Details" rows={viewItem ? [
+      <DetailModal open={!!viewItem} onClose={() => setViewItem(null)} aria-label="Invoice Details" title="Invoice Details" rows={viewItem ? [
         { label: 'Invoice #', value: viewItem.invoiceNumber },
         { label: 'Customer', value: viewItem.customerName || '-' },
         { label: 'Date', value: formatDate(viewItem.date) },

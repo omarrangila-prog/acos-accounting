@@ -331,7 +331,7 @@ export default function CustomersPage() {
                   <td className="px-5 py-3 text-right text-sm text-success">{r.type === 'credit' ? formatCurrency(r.amount) : '-'}</td>
                   <td className="px-5 py-3 text-right text-sm font-medium">{formatCurrency(Math.abs(r.balance))}</td>
                   <td className="px-5 py-3 no-print">
-                    <button onClick={() => removeTxn(r.id, ledger.id)} title="Delete transaction" className="btn-ghost !px-2 !py-1.5 text-danger"><Trash2 size={14} /></button>
+                    <button onClick={() => removeTxn(r.id, ledger.id)} aria-label="Delete transaction" title="Delete transaction" className="btn-ghost !px-2 !py-1.5 text-danger"><Trash2 size={14} /></button>
                   </td>
                 </tr>
               ))}
@@ -346,10 +346,10 @@ export default function CustomersPage() {
               </tr>
             </tfoot>
           </table>
-          {rows.length === 0 && <Empty title="No transactions in this date range" />}
+          {rows.length === 0 && <Empty aria-label="No transactions in this date range" title="No transactions in this date range" />}
         </div>
 
-        <Modal open={showTxn} onClose={() => setShowTxn(false)} title="Add Transaction">
+        <Modal open={showTxn} onClose={() => setShowTxn(false)} aria-label="Add Transaction" title="Add Transaction">
           <TxnFields form={txnForm} setForm={setTxnForm} customers={customers} lockParty />
           <div className="flex justify-end gap-2 pt-3">
             <button className="btn-secondary" onClick={() => setShowTxn(false)}>Cancel</button>
@@ -422,11 +422,11 @@ export default function CustomersPage() {
                   <td data-label="Type" className="px-5 py-3"><span className={`badge ${c.currentBalance >= 0 ? 'badge-danger' : 'badge-success'}`}>{c.currentBalance >= 0 ? 'Debit' : 'Credit'}</span></td>
                   <td className="px-5 py-3 cell-actions">
                     <div className="flex items-center gap-0.5 justify-end">
-                      <button onClick={() => openLedger(c.id)} title="View statement" className="btn-ghost !px-2 !py-1.5"><Eye size={15} /></button>
-                      <button onClick={() => openAddTxnFor(c.id)} title="Add transaction" className="btn-ghost !px-2 !py-1.5 text-accent"><PlusCircle size={15} /></button>
-                      <button onClick={() => openEditCust(c)} title="Edit customer" className="btn-ghost !px-2 !py-1.5"><Pencil size={15} /></button>
-                      <button onClick={() => downloadStatementRow(c.id)} disabled={downloadingId === c.id} title="Download statement (Excel)" className="btn-ghost !px-2 !py-1.5">{downloadingId === c.id ? <RefreshCw size={15} className="animate-spin" /> : <Download size={15} />}</button>
-                      <button onClick={() => removeCust(c.id)} title="Delete customer" className="btn-ghost !px-2 !py-1.5 text-danger"><Trash2 size={15} /></button>
+                      <button onClick={() => openLedger(c.id)} aria-label="View statement" title="View statement" className="btn-ghost !px-2 !py-1.5"><Eye size={15} /></button>
+                      <button onClick={() => openAddTxnFor(c.id)} aria-label="Add transaction" title="Add transaction" className="btn-ghost !px-2 !py-1.5 text-accent"><PlusCircle size={15} /></button>
+                      <button onClick={() => openEditCust(c)} aria-label="Edit customer" title="Edit customer" className="btn-ghost !px-2 !py-1.5"><Pencil size={15} /></button>
+                      <button onClick={() => downloadStatementRow(c.id)} disabled={downloadingId === c.id} aria-label="Download statement (Excel)" title="Download statement (Excel)" className="btn-ghost !px-2 !py-1.5">{downloadingId === c.id ? <RefreshCw size={15} className="animate-spin" /> : <Download size={15} />}</button>
+                      <button onClick={() => removeCust(c.id)} aria-label="Delete customer" title="Delete customer" className="btn-ghost !px-2 !py-1.5 text-danger"><Trash2 size={15} /></button>
                     </div>
                   </td>
                 </tr>
@@ -457,7 +457,7 @@ export default function CustomersPage() {
         </div>
       </Modal>
 
-      <Modal open={showTxn} onClose={() => setShowTxn(false)} title="Add Transaction">
+      <Modal open={showTxn} onClose={() => setShowTxn(false)} aria-label="Add Transaction" title="Add Transaction">
         <TxnFields form={txnForm} setForm={setTxnForm} customers={customers} />
         <div className="flex justify-end gap-2 pt-3">
           <button className="btn-secondary" onClick={() => setShowTxn(false)}>Cancel</button>
