@@ -170,10 +170,10 @@ export default function CustomersPage() {
           { header: 'Balance', key: 'balance', width: 18 },
         ],
         [
-          { date: formatDate(ledger.createdAt), desc: 'Opening Balance', debit: opening > 0 ? opening : 0, credit: opening < 0 ? -opening : 0, balance: Math.abs(opening) },
+          { date: formatDate(ledger.createdAt), desc: 'Opening Balance', debit: opening > 0 ? opening : '-', credit: opening < 0 ? -opening : '-', balance: Math.abs(opening) },
           ...rows.map((r: any) => ({
             date: formatDate(r.date), desc: r.description || '-',
-            debit: r.type === 'debit' ? r.amount : 0, credit: r.type === 'credit' ? r.amount : 0,
+            debit: r.type === 'debit' ? r.amount : '-', credit: r.type === 'credit' ? r.amount : '-',
             balance: Math.abs(r.balance),
           })),
           { date: '', desc: 'TOTAL', debit: totalDebit, credit: totalCredit, balance: Math.abs(netBalance) },
@@ -452,10 +452,10 @@ async function exportStatementExcel(cust: any) {
       { header: 'Balance', key: 'balance', width: 18 },
     ],
     [
-      { date: formatDate(cust.createdAt), desc: 'Opening Balance', debit: opening > 0 ? opening : 0, credit: opening < 0 ? -opening : 0, balance: Math.abs(opening) },
+      { date: formatDate(cust.createdAt), desc: 'Opening Balance', debit: opening > 0 ? opening : '-', credit: opening < 0 ? -opening : '-', balance: Math.abs(opening) },
       ...rows.map((r: any) => ({
         date: formatDate(r.date), desc: r.description || '-',
-        debit: r.type === 'debit' ? r.amount : 0, credit: r.type === 'credit' ? r.amount : 0,
+        debit: r.type === 'debit' ? r.amount : '-', credit: r.type === 'credit' ? r.amount : '-',
         balance: Math.abs(r.balance),
       })),
       { date: '', desc: 'TOTAL', debit: totalDebit, credit: totalCredit, balance: Math.abs(running) },
