@@ -185,8 +185,10 @@ export default function CustomersPage() {
       running += t.type === 'credit' ? -t.amount : t.amount
       return { ...t, balance: running }
     })
-    const totalDebit = txns.filter((t: any) => t.type === 'debit').reduce((s: number, t: any) => s + t.amount, 0)
-    const totalCredit = txns.filter((t: any) => t.type === 'credit').reduce((s: number, t: any) => s + t.amount, 0)
+    const txnDebit = txns.filter((t: any) => t.type === 'debit').reduce((s: number, t: any) => s + t.amount, 0)
+    const txnCredit = txns.filter((t: any) => t.type === 'credit').reduce((s: number, t: any) => s + t.amount, 0)
+    const totalDebit = txnDebit + (opening > 0 ? opening : 0)
+    const totalCredit = txnCredit + (opening < 0 ? -opening : 0)
     const netBalance = running
     const statusLabel = netBalance > 0 ? 'Debit — Receivable' : netBalance < 0 ? 'Credit — Payable' : 'Settled'
 
