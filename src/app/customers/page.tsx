@@ -117,13 +117,13 @@ export default function CustomersPage() {
           { header: 'Party Name', key: 'name', width: 26 },
           { header: 'Phone', key: 'phone', width: 16 },
           { header: 'Address', key: 'address', width: 30 },
-          { header: 'Balance', key: 'balance', width: 16 },
-          { header: 'Type', key: 'type', width: 16 },
+          { header: 'Debit', key: 'debit', width: 16 },
+          { header: 'Credit', key: 'credit', width: 16 },
         ],
         (all || []).map((c: any) => ({
           name: c.name, phone: c.phone || '', address: c.address || '',
-          balance: Math.abs(c.currentBalance),
-          type: c.currentBalance >= 0 ? 'Debit / Receivable' : 'Credit / Payable',
+          debit: c.currentBalance > 0 ? c.currentBalance : 0,
+          credit: c.currentBalance < 0 ? -c.currentBalance : 0,
         })),
       )
       toast.success('Exported')
@@ -144,13 +144,13 @@ export default function CustomersPage() {
       [
         { header: 'Party Name', key: 'name' },
         { header: 'Phone', key: 'phone' },
-        { header: 'Type', key: 'type' },
-        { header: 'Balance', key: 'balance', align: 'right' },
+        { header: 'Debit', key: 'debit', align: 'right' },
+        { header: 'Credit', key: 'credit', align: 'right' },
       ],
       list.map((c: any) => ({
         name: c.name, phone: c.phone || '-',
-        type: c.currentBalance >= 0 ? 'Debit / Receivable' : 'Credit / Payable',
-        balance: fmt(Math.abs(c.currentBalance)),
+        debit: c.currentBalance > 0 ? fmt(c.currentBalance) : '-',
+        credit: c.currentBalance < 0 ? fmt(-c.currentBalance) : '-',
       })),
       {
         subtitle: `${list.length} Parties · ${new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}`,
@@ -409,8 +409,8 @@ export default function CustomersPage() {
             <thead><tr className="border-b border-border bg-surface-1">
               <th className="text-left px-5 py-3 table-header">Party Name</th>
               <th className="text-left px-5 py-3 table-header">Phone</th>
-              <th className="text-right px-5 py-3 table-header">Balance</th>
-              <th className="text-left px-5 py-3 table-header">Type</th>
+              <th className="text-right px-5 py-3 table-header">Debit</th>
+              <th className="text-right px-5 py-3 table-header">Credit</th>
               <th className="px-5 py-3" />
             </tr></thead>
             <tbody>
@@ -418,8 +418,8 @@ export default function CustomersPage() {
                 <tr key={c.id} className="border-b border-border/50 hover:bg-surface-1/50">
                   <td data-label="Party Name" className="px-5 py-3 text-sm font-medium text-text-primary cursor-pointer" onClick={() => openLedger(c.id)}>{c.name}</td>
                   <td data-label="Phone" className="px-5 py-3 text-sm text-text-secondary">{c.phone || '-'}</td>
-                  <td data-label="Balance" className={`px-5 py-3 text-right text-sm font-semibold ${c.currentBalance >= 0 ? 'text-danger' : 'text-success'}`}>{formatCurrency(Math.abs(c.currentBalance))}</td>
-                  <td data-label="Type" className="px-5 py-3"><span className={`badge ${c.currentBalance >= 0 ? 'badge-danger' : 'badge-success'}`}>{c.currentBalance >= 0 ? 'Debit' : 'Credit'}</span></td>
+                  <td data-label="Debit" className="px-5 py-3 text-right text-sm font-semibold text-danger">{c.currentBalance > 0 ? formatCurrency(c.currentBalance) : '-'}</td>
+                  <td data-label="Credit" className="px-5 py-3 text-right text-sm font-semibold text-success">{c.currentBalance < 0 ? formatCurrency(-c.currentBalance) : '-'}</td>
                   <td className="px-5 py-3 cell-actions">
                     <div className="flex items-center gap-0.5 justify-end">
                       <button onClick={() => openLedger(c.id)} aria-label="View statement" title="View statement" className="btn-ghost !px-2 !py-1.5"><Eye size={15} /></button>

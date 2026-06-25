@@ -47,8 +47,8 @@ export default function ReportsPage() {
         columns = [{ header: 'Date', key: 'date', width: 14 }, { header: 'Category', key: 'category', width: 18 }, { header: 'Description', key: 'description', width: 30 }, { header: 'Amount', key: 'amount', width: 16 }]
         rows = report.rows.map((r: any) => ({ date: formatDate(r.date), category: r.category, description: r.description, amount: r.amount }))
       } else if (type === 'receivables' || type === 'payables') {
-        columns = [{ header: 'Party', key: 'name', width: 26 }, { header: 'Phone', key: 'phone', width: 16 }, { header: 'Balance', key: 'balance', width: 16 }]
-        rows = report.rows.map((r: any) => ({ name: r.name, phone: r.phone || '', balance: Math.abs(r.balance) }))
+        columns = [{ header: 'Party', key: 'name', width: 26 }, { header: 'Phone', key: 'phone', width: 16 }, { header: 'Debit', key: 'debit', width: 16 }, { header: 'Credit', key: 'credit', width: 16 }]
+        rows = report.rows.map((r: any) => ({ name: r.name, phone: r.phone || '', debit: r.debit || 0, credit: r.credit || 0 }))
       } else if (type === 'pdc') {
         columns = [{ header: 'Party', key: 'partyName', width: 24 }, { header: 'Cheque #', key: 'chequeNumber', width: 16 }, { header: 'Bank', key: 'bank', width: 18 }, { header: 'Amount', key: 'amount', width: 16 }, { header: 'Status', key: 'status', width: 14 }]
         rows = report.rows.map((r: any) => ({ partyName: r.partyName, chequeNumber: r.chequeNumber || '', bank: r.bank || '', amount: r.amount, status: r.status }))
@@ -74,8 +74,8 @@ export default function ReportsPage() {
       rows = report.rows.map((r: any) => ({ date: formatDate(r.date), category: r.category, description: r.description, amount: fmt(r.amount) }))
       total = { label: 'Total', value: fmt(report.total) }
     } else if (type === 'receivables' || type === 'payables') {
-      columns = [{ header: 'Party', key: 'name' }, { header: 'Phone', key: 'phone' }, { header: 'Balance', key: 'balance', align: 'right' }]
-      rows = report.rows.map((r: any) => ({ name: r.name, phone: r.phone || '-', balance: fmt(Math.abs(r.balance)) }))
+      columns = [{ header: 'Party', key: 'name' }, { header: 'Phone', key: 'phone' }, { header: 'Debit', key: 'debit', align: 'right' }, { header: 'Credit', key: 'credit', align: 'right' }]
+      rows = report.rows.map((r: any) => ({ name: r.name, phone: r.phone || '-', debit: r.debit ? fmt(r.debit) : '-', credit: r.credit ? fmt(r.credit) : '-' }))
       total = { label: 'Total', value: fmt(report.total) }
     } else if (type === 'pdc') {
       columns = [{ header: 'Party', key: 'partyName' }, { header: 'Cheque #', key: 'chequeNumber' }, { header: 'Bank', key: 'bank' }, { header: 'Status', key: 'status' }, { header: 'Amount', key: 'amount', align: 'right' }]
@@ -153,8 +153,8 @@ function ReportBody({ type, report }: any) {
       { h: 'Description', render: (r) => r.description },
       { h: 'Amount', render: (r) => formatCurrency(r.amount) },
     ],
-    receivables: [{ h: 'Party', render: (r) => r.name }, { h: 'Phone', render: (r) => r.phone || '-' }, { h: 'Balance', render: (r) => formatCurrency(Math.abs(r.balance)) }],
-    payables: [{ h: 'Party', render: (r) => r.name }, { h: 'Phone', render: (r) => r.phone || '-' }, { h: 'Balance', render: (r) => formatCurrency(Math.abs(r.balance)) }],
+    receivables: [{ h: 'Party', render: (r) => r.name }, { h: 'Phone', render: (r) => r.phone || '-' }, { h: 'Debit', render: (r) => r.debit ? formatCurrency(r.debit) : '-' }, { h: 'Credit', render: (r) => r.credit ? formatCurrency(r.credit) : '-' }],
+    payables: [{ h: 'Party', render: (r) => r.name }, { h: 'Phone', render: (r) => r.phone || '-' }, { h: 'Debit', render: (r) => r.debit ? formatCurrency(r.debit) : '-' }, { h: 'Credit', render: (r) => r.credit ? formatCurrency(r.credit) : '-' }],
     pdc: [{ h: 'Party', render: (r) => r.partyName }, { h: 'Cheque #', render: (r) => r.chequeNumber || '-' }, { h: 'Bank', render: (r) => r.bank || '-' }, { h: 'Amount', render: (r) => formatCurrency(r.amount) }, { h: 'Status', render: (r) => r.status }],
     ledger: [{ h: 'Party', render: (r) => r.name }, { h: 'Debit', render: (r) => r.debit ? formatCurrency(r.debit) : '-' }, { h: 'Credit', render: (r) => r.credit ? formatCurrency(r.credit) : '-' }, { h: 'Transactions', render: (r) => r.txns }],
   }

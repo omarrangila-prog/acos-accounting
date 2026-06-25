@@ -41,8 +41,9 @@ export async function GET(req: NextRequest) {
       const customers = await customerRepo.findManyWithTxns()
       const rows = customers.map((c) => ({ name: c.name, phone: c.phone, balance: custBalance(c) }))
         .filter((r) => type === 'receivables' ? r.balance > 0 : r.balance < 0)
+        .map((r) => ({ name: r.name, phone: r.phone, debit: r.balance > 0 ? r.balance : 0, credit: r.balance < 0 ? -r.balance : 0 }))
       return NextResponse.json({ type, title: type === 'receivables' ? 'Receivables' : 'Payables',
-        total: rows.reduce((s, r) => s + Math.abs(r.balance), 0), rows })
+        total: rows.reduce((s, r) => s + r.debit + r.credit, 0), rows })
     }
 
     if (type === 'pdc') {
