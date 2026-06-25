@@ -12,29 +12,31 @@ export function printHtml(title: string, bodyHtml: string) {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
   * { box-sizing: border-box; }
-  body { font-family: 'Segoe UI', Inter, -apple-system, sans-serif; color: #0F172A; margin: 0; padding: 32px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .rpt-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #3B6FFF; padding-bottom: 14px; margin-bottom: 18px; }
-  .rpt-company { font-size: 22px; font-weight: 800; color: #3B6FFF; letter-spacing: .3px; }
+  body { font-family: 'Segoe UI', Inter, -apple-system, sans-serif; color: #1A1A1A; margin: 0; padding: 28px 32px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .rpt-header { padding-bottom: 14px; margin-bottom: 16px; border-bottom: 1px solid #E5E7EB; }
+  .rpt-company { font-size: 14px; font-weight: 700; color: #1A1A1A; }
   .rpt-sub { font-size: 11px; color: #64748B; margin-top: 2px; }
-  .rpt-title { font-size: 15px; font-weight: 700; text-align: right; }
-  .rpt-meta { font-size: 11px; color: #475569; text-align: right; margin-top: 2px; }
+  .rpt-title { font-size: 17px; font-weight: 800; margin-top: 10px; }
+  .rpt-meta { font-size: 12px; color: #6B7280; margin-top: 2px; }
   .rpt-info { display: flex; flex-wrap: wrap; gap: 24px; margin-bottom: 16px; font-size: 12px; }
   .rpt-info b { color: #0F172A; }
   .rpt-info .lbl { color: #64748B; }
-  .summary { display: flex; gap: 12px; margin-bottom: 18px; flex-wrap: wrap; }
-  .summary .box { flex: 1; min-width: 140px; border: 1px solid #E8ECF2; border-radius: 10px; padding: 10px 14px; }
-  .summary .box .k { font-size: 10px; text-transform: uppercase; letter-spacing: .5px; color: #64748B; }
-  .summary .box .v { font-size: 18px; font-weight: 700; margin-top: 2px; }
-  .red { color: #DC2626; } .green { color: #12A150; } .blue { color: #3B6FFF; }
-  table { width: 100%; border-collapse: collapse; font-size: 12px; }
-  thead th { background: #3B6FFF; color: #fff; padding: 8px 10px; text-align: left; font-weight: 600; font-size: 11px; }
+  .summary { display: flex; gap: 40px; margin-bottom: 20px; flex-wrap: wrap; }
+  .summary .box .k { font-size: 12px; color: #6B7280; }
+  .summary .box .v { font-size: 15px; font-weight: 700; margin-top: 4px; }
+  .red { color: #DC2626; } .green { color: #14A35B; } .blue { color: #3B6FFF; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead th { background: #fff; color: #1A1A1A; padding: 10px 10px; text-align: left; font-weight: 700; font-size: 13px; border-bottom: 2px solid #1A1A1A; }
   thead th.r { text-align: right; }
-  tbody td { padding: 7px 10px; border-bottom: 1px solid #EEF1F6; }
+  thead th.balance-col { background: #F2F4F7; }
+  tbody td { padding: 10px 10px; border-bottom: 1px solid #EEF1F6; vertical-align: top; }
   tbody td.r { text-align: right; }
-  tbody tr:nth-child(even) { background: #F8F9FB; }
-  .opening td { font-style: italic; color: #64748B; background: #F1F3F7 !important; }
-  tfoot td { padding: 9px 10px; font-weight: 700; border-top: 2px solid #CBD5E1; }
+  tbody td.balance-col { background: #F7F8FA; font-weight: 600; }
+  .opening td { font-style: italic; color: #64748B; }
+  .opening td.balance-col { font-style: normal; }
+  tfoot td { padding: 10px 10px; font-weight: 700; border-top: 2px solid #1A1A1A; }
   tfoot td.r { text-align: right; }
+  tfoot td.balance-col { background: #F2F4F7; }
   .rpt-footer { margin-top: 22px; font-size: 10px; color: #94A3B8; text-align: center; border-top: 1px solid #E8ECF2; padding-top: 10px; }
   @media print { body { padding: 0; } @page { margin: 16mm; } }
 </style></head>
@@ -50,7 +52,7 @@ export function fmt(n: number): string {
 // Generic table report → print/save-as-PDF. Reused by Expenses, PDC, Invoices, Reports.
 export function printTableReport(
   reportTitle: string,
-  columns: { header: string; key: string; align?: 'left' | 'right' }[],
+  columns: { header: string; key: string; align?: 'left' | 'right'; balanceCol?: boolean }[],
   rows: Record<string, any>[],
   opts?: {
     subtitle?: string
@@ -58,9 +60,14 @@ export function printTableReport(
     summary?: { k: string; v: string; cls?: string }[]
   },
 ) {
-  const head = columns.map((c) => `<th class="${c.align === 'right' ? 'r' : ''}">${c.header}</th>`).join('')
+  const cellCls = (c: typeof columns[number]) => `${c.align === 'right' ? 'r' : ''} ${c.balanceCol ? 'balance-col' : ''}`.trim()
+  const head = columns.map((c) => `<th class="${cellCls(c)}">${c.header}</th>`).join('')
   const bodyRows = rows.map((r) =>
-    `<tr>${columns.map((c) => `<td class="${c.align === 'right' ? 'r' : ''}">${r[c.key] ?? ''}</td>`).join('')}</tr>`,
+    `<tr>${columns.map((c) => {
+      const cls = c.balanceCol && typeof r[c.key] === 'object' && r[c.key] ? `${cellCls(c)} ${r[c.key].cls || ''}` : cellCls(c)
+      const val = c.balanceCol && typeof r[c.key] === 'object' && r[c.key] ? r[c.key].text : r[c.key]
+      return `<td class="${cls}">${val ?? ''}</td>`
+    }).join('')}</tr>`,
   ).join('')
   const totalRow = opts?.total
     ? `<tfoot><tr><td colspan="${columns.length - 1}">${opts.total.label}</td><td class="r">${opts.total.value}</td></tr></tfoot>`
@@ -70,8 +77,9 @@ export function printTableReport(
     : ''
   printHtml(reportTitle, `
     <div class="rpt-header">
-      <div><div class="rpt-company">${COMPANY_NAME}</div></div>
-      <div><div class="rpt-title">${reportTitle}</div>${opts?.subtitle ? `<div class="rpt-meta">${opts.subtitle}</div>` : ''}</div>
+      <div class="rpt-company">${COMPANY_NAME}</div>
+      <div class="rpt-title">${reportTitle}</div>
+      ${opts?.subtitle ? `<div class="rpt-meta">${opts.subtitle}</div>` : ''}
     </div>
     ${summaryHtml}
     <table>

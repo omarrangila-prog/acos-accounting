@@ -146,19 +146,20 @@ export default function CustomersPage() {
         { header: 'Phone', key: 'phone' },
         { header: 'Debit', key: 'debit', align: 'right' },
         { header: 'Credit', key: 'credit', align: 'right' },
+        { header: 'Balance', key: 'balance', align: 'right', balanceCol: true },
       ],
       list.map((c: any) => ({
         name: c.name, phone: c.phone || '-',
         debit: c.currentBalance > 0 ? fmt(c.currentBalance) : '-',
         credit: c.currentBalance < 0 ? fmt(-c.currentBalance) : '-',
+        balance: { text: `${fmt(Math.abs(c.currentBalance))} (${c.currentBalance >= 0 ? '+' : '-'})`, cls: c.currentBalance >= 0 ? 'red' : 'green' },
       })),
       {
         subtitle: `${list.length} Parties · ${new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}`,
-        total: { label: `Net Balance (${tNet >= 0 ? 'Receivable' : 'Payable'})`, value: fmt(Math.abs(tNet)) },
         summary: [
-          { k: 'Total Debit', v: fmt(tDebit), cls: 'red' },
-          { k: 'Total Credit', v: fmt(tCredit), cls: 'green' },
-          { k: 'Net Balance', v: fmt(Math.abs(tNet)), cls: tNet >= 0 ? 'red' : 'green' },
+          { k: 'Total Debit', v: fmt(tDebit) },
+          { k: 'Total Credit', v: fmt(tCredit) },
+          { k: 'Net Balance', v: `${fmt(Math.abs(tNet))} (${tNet >= 0 ? '+' : '-'})`, cls: tNet >= 0 ? 'red' : 'green' },
         ],
       },
     )
@@ -221,30 +222,26 @@ export default function CustomersPage() {
     }
 
     const statementPdf = () => {
+      const balCell = (b: number) => `<td class="r balance-col ${b >= 0 ? 'red' : 'green'}">${fmt(Math.abs(b))} (${b >= 0 ? '+' : '-'})</td>`
       const rowHtml = [
-        `<tr class="opening"><td>${formatDate(ledger.createdAt)}</td><td>Opening Balance</td><td class="r">${opening > 0 ? fmt(opening) : '-'}</td><td class="r">${opening < 0 ? fmt(-opening) : '-'}</td><td class="r">${fmt(Math.abs(opening))}</td></tr>`,
-        ...rows.map((r: any) => `<tr><td>${formatDate(r.date)}</td><td>${(r.description || '-')}</td><td class="r red">${r.type === 'debit' ? fmt(r.amount) : '-'}</td><td class="r green">${r.type === 'credit' ? fmt(r.amount) : '-'}</td><td class="r">${fmt(Math.abs(r.balance))}</td></tr>`),
+        `<tr class="opening"><td>${formatDate(ledger.createdAt)}</td><td>Opening Balance</td><td class="r">${opening > 0 ? fmt(opening) : '-'}</td><td class="r">${opening < 0 ? fmt(-opening) : '-'}</td>${balCell(opening)}</tr>`,
+        ...rows.map((r: any) => `<tr><td>${formatDate(r.date)}</td><td>${(r.description || '-')}</td><td class="r">${r.type === 'debit' ? fmt(r.amount) : '-'}</td><td class="r">${r.type === 'credit' ? fmt(r.amount) : '-'}</td>${balCell(r.balance)}</tr>`),
       ].join('')
-      printHtml(`Statement - ${ledger.name}`, `
+      printHtml(`${ledger.name} Statement`, `
         <div class="rpt-header">
-          <div><div class="rpt-company">${COMPANY_NAME}</div></div>
-          <div><div class="rpt-title">Account Statement</div><div class="rpt-meta">${rangeText}</div></div>
-        </div>
-        <div class="rpt-info">
-          <div><span class="lbl">Customer:</span> <b>${ledger.name}</b></div>
-          <div><span class="lbl">Phone:</span> <b>${ledger.phone || '—'}</b></div>
-          <div><span class="lbl">Address:</span> <b>${ledger.address || '—'}</b></div>
+          <div class="rpt-company">${COMPANY_NAME}</div>
+          <div class="rpt-title">${ledger.name} Statement</div>
+          <div class="rpt-meta">${rangeText}</div>
         </div>
         <div class="summary">
-          <div class="box"><div class="k">Total Debit</div><div class="v red">${fmt(totalDebit)}</div></div>
-          <div class="box"><div class="k">Total Credit</div><div class="v green">${fmt(totalCredit)}</div></div>
-          <div class="box"><div class="k">Net Balance</div><div class="v ${netBalance >= 0 ? 'red' : 'green'}">${fmt(Math.abs(netBalance))}</div></div>
-          <div class="box"><div class="k">Status</div><div class="v blue" style="font-size:13px">${statusLabel}</div></div>
+          <div class="box"><div class="k">Total Debit</div><div class="v">${fmt(totalDebit)}</div></div>
+          <div class="box"><div class="k">Total Credit</div><div class="v">${fmt(totalCredit)}</div></div>
+          <div class="box"><div class="k">Net Balance</div><div class="v ${netBalance >= 0 ? 'red' : 'green'}">${fmt(Math.abs(netBalance))}<br/><span style="font-size:11px">${netBalance >= 0 ? 'Debit (+)' : 'Credit (-)'}</span></div></div>
         </div>
         <table>
-          <thead><tr><th>Date</th><th>Tafseel / Description</th><th class="r">Debit (-)</th><th class="r">Credit (+)</th><th class="r">Balance</th></tr></thead>
+          <thead><tr><th>Date</th><th>Tafseel</th><th class="r">Debit (-)</th><th class="r">Credit (+)</th><th class="r balance-col">Balance</th></tr></thead>
           <tbody>${rowHtml}</tbody>
-          <tfoot><tr><td colspan="2">TOTAL</td><td class="r red">${fmt(totalDebit)}</td><td class="r green">${fmt(totalCredit)}</td><td class="r">${fmt(Math.abs(netBalance))}</td></tr></tfoot>
+          <tfoot><tr><td colspan="2">TOTAL</td><td class="r">${fmt(totalDebit)}</td><td class="r">${fmt(totalCredit)}</td>${balCell(netBalance)}</tr></tfoot>
         </table>`)
     }
 
