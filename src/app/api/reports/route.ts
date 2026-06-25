@@ -53,8 +53,16 @@ export async function GET(req: NextRequest) {
 
     if (type === 'ledger') {
       const customers = await customerRepo.findManyWithTxns()
-      const rows = customers.map((c) => ({ name: c.name, balance: custBalance(c),
-        txns: c.transactions.filter((t) => inRange(t.date)).length }))
+      const rows = customers.map((c) => {
+        const txns = c.transactions.filter((t: any) => inRange(t.date))
+        const balance = custBalance(c)
+        return {
+          name: c.name,
+          debit: balance > 0 ? balance : 0,
+          credit: balance < 0 ? -balance : 0,
+          txns: txns.length,
+        }
+      })
       return NextResponse.json({ type, title: 'Customer Ledger', rows })
     }
 

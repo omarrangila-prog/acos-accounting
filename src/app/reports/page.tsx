@@ -53,8 +53,8 @@ export default function ReportsPage() {
         columns = [{ header: 'Party', key: 'partyName', width: 24 }, { header: 'Cheque #', key: 'chequeNumber', width: 16 }, { header: 'Bank', key: 'bank', width: 18 }, { header: 'Amount', key: 'amount', width: 16 }, { header: 'Status', key: 'status', width: 14 }]
         rows = report.rows.map((r: any) => ({ partyName: r.partyName, chequeNumber: r.chequeNumber || '', bank: r.bank || '', amount: r.amount, status: r.status }))
       } else if (type === 'ledger') {
-        columns = [{ header: 'Party', key: 'name', width: 26 }, { header: 'Balance', key: 'balance', width: 16 }, { header: 'Transactions', key: 'txns', width: 14 }]
-        rows = report.rows.map((r: any) => ({ name: r.name, balance: Math.abs(r.balance), txns: r.txns }))
+        columns = [{ header: 'Party', key: 'name', width: 26 }, { header: 'Debit', key: 'debit', width: 16 }, { header: 'Credit', key: 'credit', width: 16 }, { header: 'Transactions', key: 'txns', width: 14 }]
+        rows = report.rows.map((r: any) => ({ name: r.name, debit: r.debit || 0, credit: r.credit || 0, txns: r.txns }))
       }
       await downloadExcel(`${report.title.replace(/[^a-z0-9]/gi, '_')}_${today}.xlsx`, report.title, columns, rows)
       toast.success('Exported')
@@ -82,8 +82,8 @@ export default function ReportsPage() {
       rows = report.rows.map((r: any) => ({ partyName: r.partyName, chequeNumber: r.chequeNumber || '-', bank: r.bank || '-', status: r.status, amount: fmt(r.amount) }))
       total = { label: 'Total', value: fmt(report.total) }
     } else if (type === 'ledger') {
-      columns = [{ header: 'Party', key: 'name' }, { header: 'Transactions', key: 'txns' }, { header: 'Balance', key: 'balance', align: 'right' }]
-      rows = report.rows.map((r: any) => ({ name: r.name, txns: r.txns, balance: fmt(Math.abs(r.balance)) }))
+      columns = [{ header: 'Party', key: 'name' }, { header: 'Transactions', key: 'txns' }, { header: 'Debit', key: 'debit', align: 'right' }, { header: 'Credit', key: 'credit', align: 'right' }]
+      rows = report.rows.map((r: any) => ({ name: r.name, txns: r.txns, debit: r.debit ? fmt(r.debit) : '-', credit: r.credit ? fmt(r.credit) : '-' }))
     }
     printTableReport(report.title, columns, rows, { subtitle: sub, total })
   }
@@ -156,7 +156,7 @@ function ReportBody({ type, report }: any) {
     receivables: [{ h: 'Party', render: (r) => r.name }, { h: 'Phone', render: (r) => r.phone || '-' }, { h: 'Balance', render: (r) => formatCurrency(Math.abs(r.balance)) }],
     payables: [{ h: 'Party', render: (r) => r.name }, { h: 'Phone', render: (r) => r.phone || '-' }, { h: 'Balance', render: (r) => formatCurrency(Math.abs(r.balance)) }],
     pdc: [{ h: 'Party', render: (r) => r.partyName }, { h: 'Cheque #', render: (r) => r.chequeNumber || '-' }, { h: 'Bank', render: (r) => r.bank || '-' }, { h: 'Amount', render: (r) => formatCurrency(r.amount) }, { h: 'Status', render: (r) => r.status }],
-    ledger: [{ h: 'Party', render: (r) => r.name }, { h: 'Balance', render: (r) => formatCurrency(Math.abs(r.balance)) }, { h: 'Transactions', render: (r) => r.txns }],
+    ledger: [{ h: 'Party', render: (r) => r.name }, { h: 'Debit', render: (r) => r.debit ? formatCurrency(r.debit) : '-' }, { h: 'Credit', render: (r) => r.credit ? formatCurrency(r.credit) : '-' }, { h: 'Transactions', render: (r) => r.txns }],
   }
   const c = cols[type] || []
   if (!report.rows?.length) return <p className="text-sm text-text-muted py-10 text-center">No data for this period.</p>
