@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Delete } from 'lucide-react'
-import { verifyPin, saveAccount } from '@/lib/account'
+import { saveAccount, type ActiveAccount } from '@/lib/account'
 
 const PIN_LENGTH = 4
 
@@ -11,28 +11,45 @@ export default function LoginPage() {
   const router = useRouter()
   const [digits, setDigits] = useState<string[]>([])
   const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
   const submitting = useRef(false)
 
-  const submit = useCallback((pin: string) => {
+  const submit = useCallback(async (pin: string) => {
     if (submitting.current) return
     submitting.current = true
+    setLoading(true)
 
-    const result = verifyPin(pin)
+    try {
+      const res = await fetch('/api/account/select', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin }),
+      })
 
-    if (result.success === false) {
-      setError(result.message)
+      const data = await res.json()
+
+      if (!res.ok || !data.success) {
+        setError(data.error || 'Incorrect PIN. Please try again.')
+        setDigits([])
+        if (navigator.vibrate) navigator.vibrate([80, 40, 80])
+        submitting.current = false
+        setLoading(false)
+        return
+      }
+
+      // Mirror to localStorage so AppShell can read isDemo / accountId client-side
+      saveAccount(data.account as ActiveAccount)
+      router.replace('/')
+    } catch {
+      setError('Unable to connect. Please try again.')
       setDigits([])
-      if (navigator.vibrate) navigator.vibrate([80, 40, 80])
       submitting.current = false
-      return
+      setLoading(false)
     }
-
-    // Save account and navigate immediately — no API call
-    saveAccount(result.account)
-    router.replace('/')
   }, [router])
 
   const push = useCallback((d: string) => {
+    if (loading) return
     setError('')
     setDigits((prev) => {
       if (prev.length >= PIN_LENGTH) return prev
@@ -42,18 +59,20 @@ export default function LoginPage() {
       }
       return next
     })
-  }, [submit])
+  }, [submit, loading])
 
   const backspace = useCallback(() => {
+    if (loading) return
     setError('')
     setDigits((prev) => prev.slice(0, -1))
-  }, [])
+  }, [loading])
 
   const clear = useCallback(() => {
+    if (loading) return
     setError('')
     setDigits([])
     submitting.current = false
-  }, [])
+  }, [loading])
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -90,9 +109,12 @@ export default function LoginPage() {
           ))}
         </div>
 
-        {/* Error message */}
+        {/* Status */}
         <div className="h-6 flex items-center justify-center mb-4">
-          {error && (
+          {loading && (
+            <p className="text-sm text-text-muted text-center">Opening account…</p>
+          )}
+          {!loading && error && (
             <p className="text-sm text-danger text-center" role="alert">{error}</p>
           )}
         </div>
@@ -101,19 +123,19 @@ export default function LoginPage() {
         <div className="card p-4 shadow-card">
           <div className="grid grid-cols-3 gap-2">
             {['1','2','3','4','5','6','7','8','9'].map((d) => (
-              <KeyButton key={d} label={d} onClick={() => push(d)} />
+              <KeyButton key={d} label={d} onClick={() => push(d)} disabled={loading} />
             ))}
             <button
               onClick={clear}
-              disabled={digits.length === 0}
+              disabled={digits.length === 0 || loading}
               className="h-14 rounded-xl text-sm font-medium text-text-muted hover:bg-surface-2 disabled:opacity-30 transition-all duration-150 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
             >
               CLR
             </button>
-            <KeyButton label="0" onClick={() => push('0')} />
+            <KeyButton label="0" onClick={() => push('0')} disabled={loading} />
             <button
               onClick={backspace}
-              disabled={digits.length === 0}
+              disabled={digits.length === 0 || loading}
               className="h-14 rounded-xl flex items-center justify-center text-text-secondary hover:bg-surface-2 disabled:opacity-30 transition-all duration-150 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
               aria-label="Backspace"
             >
@@ -130,11 +152,12 @@ export default function LoginPage() {
   )
 }
 
-function KeyButton({ label, onClick }: { label: string; onClick: () => void }) {
+function KeyButton({ label, onClick, disabled }: { label: string; onClick: () => void; disabled?: boolean }) {
   return (
     <button
       onClick={onClick}
-      className="h-14 rounded-xl text-xl font-semibold text-text-primary bg-surface-0 hover:bg-accent hover:text-white transition-all duration-150 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent shadow-sm border border-border"
+      disabled={disabled}
+      className="h-14 rounded-xl text-xl font-semibold text-text-primary bg-surface-0 hover:bg-accent hover:text-white disabled:opacity-40 transition-all duration-150 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent shadow-sm border border-border"
       aria-label={`Digit ${label}`}
     >
       {label}

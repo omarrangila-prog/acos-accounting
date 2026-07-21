@@ -174,15 +174,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     if (saved) setAccount(saved)
   }, [pathname])
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     clearAccount()
     setAccount(null)
+    await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {})
     router.replace('/login')
   }
 
-  const handleSwitchAccount = () => {
+  const handleSwitchAccount = async () => {
     clearAccount()
     setAccount(null)
+    await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {})
     router.replace('/login')
   }
 

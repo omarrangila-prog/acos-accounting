@@ -1,22 +1,37 @@
-// Server-side helper: reads the active account from the request cookie.
-// The cookie value is just the accountId string set by saveAccount() in account.ts.
 import { cookies } from 'next/headers'
-
-const PRODUCTION_ACCOUNT = 'cfood_production'
 
 export type ServerAccount = {
   accountId: string
-  tenantId: string  // same as accountId for now
-  isProduction: boolean
+  tenantId: string
+  isDemo: boolean
+  databaseMode: 'production' | 'tenant'
+}
+
+const KNOWN_ACCOUNTS: Record<string, ServerAccount> = {
+  cfood_production: {
+    accountId: 'cfood_production',
+    tenantId: 'cfood_production',
+    isDemo: false,
+    databaseMode: 'production',
+  },
+  demo: {
+    accountId: 'demo',
+    tenantId: 'demo',
+    isDemo: true,
+    databaseMode: 'tenant',
+  },
 }
 
 export function getServerAccount(): ServerAccount | null {
-  const store = cookies()
-  const accountId = store.get('acos_account')?.value
-  if (!accountId) return null
-  return {
-    accountId,
-    tenantId: accountId,
-    isProduction: accountId === PRODUCTION_ACCOUNT,
+  const raw = cookies().get('acos_account')?.value
+  if (!raw) return null
+
+  try {
+    const parsed = JSON.parse(raw)
+    const accountId = parsed?.accountId
+    return KNOWN_ACCOUNTS[accountId] ?? null
+  } catch {
+    // Cookie may be a plain accountId string from an older client
+    return KNOWN_ACCOUNTS[raw] ?? null
   }
 }

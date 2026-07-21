@@ -5,5 +5,6 @@ export const runtime = 'nodejs'
 export async function POST() {
   const res = NextResponse.json({ ok: true })
   res.cookies.set('acos_account', '', { path: '/', maxAge: 0, sameSite: 'lax' })
+  res.cookies.set('acos_session', '', { path: '/', maxAge: 0, sameSite: 'lax' })
   return res
 }
