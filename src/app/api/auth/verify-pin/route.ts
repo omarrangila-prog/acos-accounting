@@ -1,17 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { setSessionCookie } from '@/lib/session'
+import { fdb } from '@/lib/firestore'
 
 export const runtime = 'nodejs'
 
-// In-memory rate limiter keyed by client IP.
-// Resets when the server restarts — sufficient for a small single-tenant app.
-// For multi-instance deployments, move this to Redis/KV.
-const attempts = new Map<string, { count: number; lockedUntil: number }>()
+// ---- Firestore-backed rate limiter -----------------------------------------
+// Persists across Vercel serverless instances. Records live in
+// _auth_attempts/{hashedIp} and expire automatically via TTL field.
+// The IP is SHA-256 hashed before storage — never stored in plain text.
 
-const MAX_ATTEMPTS = 5
-const LOCK_MS = 5 * 60 * 1000 // 5 minutes
-const BACKOFF_MS = [0, 0, 0, 2000, 5000] // delay per attempt index (0-based)
+import { createHash } from 'crypto'
+
+function hashIp(ip: string): string {
+  return createHash('sha256').update(ip + (process.env.SESSION_SECRET || '')).digest('hex').slice(0, 32)
+}
 
 function clientIp(req: NextRequest): string {
   return (
@@ -21,35 +24,94 @@ function clientIp(req: NextRequest): string {
   )
 }
 
-// Tenant map lives server-side only — never exposed to the client.
-// PIN hashes are loaded from env vars; the mapping itself is in this file
-// but only the hashes travel; PINs are never stored.
-const TENANTS: { tenantId: string; isDemo: boolean; hash: string }[] = [
-  {
-    tenantId: 'cfood_production',
-    isDemo: false,
-    hash: process.env.PIN_HASH_PRODUCTION || '',
-  },
-  {
-    tenantId: 'demo',
-    isDemo: true,
-    hash: process.env.PIN_HASH_DEMO || '',
-  },
-]
+const MAX_ATTEMPTS = 5
+const LOCK_MS = 5 * 60 * 1000 // 5 minutes
+
+async function getRateLimitRec(key: string): Promise<{ count: number; lockedUntil: number }> {
+  try {
+    const doc = await fdb().collection('_auth_attempts').doc(key).get()
+    if (!doc.exists) return { count: 0, lockedUntil: 0 }
+    const d = doc.data()!
+    // Auto-expire: if lockedUntil is in the past, treat as clean
+    if (d.lockedUntil && d.lockedUntil < Date.now()) return { count: 0, lockedUntil: 0 }
+    return { count: d.count ?? 0, lockedUntil: d.lockedUntil ?? 0 }
+  } catch {
+    // If Firestore is unreachable, fail open (don't lock out users)
+    return { count: 0, lockedUntil: 0 }
+  }
+}
+
+async function incrementFailure(key: string, currentCount: number, now: number): Promise<void> {
+  try {
+    const newCount = currentCount + 1
+    const lockedUntil = newCount >= MAX_ATTEMPTS ? now + LOCK_MS : 0
+    await fdb().collection('_auth_attempts').doc(key).set({
+      count: newCount,
+      lockedUntil,
+      updatedAt: now,
+    })
+  } catch { /* non-fatal */ }
+}
+
+async function clearFailures(key: string): Promise<void> {
+  try {
+    await fdb().collection('_auth_attempts').doc(key).delete()
+  } catch { /* non-fatal */ }
+}
+
+// ---- Tenant map ------------------------------------------------------------
+// Read env vars inside the handler, not at module scope, so they are always
+// current on each cold start and not captured as empty strings at build time.
+
+function getTenants() {
+  return [
+    {
+      tenantId: 'cfood_production',
+      isDemo: false,
+      hash: process.env.PIN_HASH_PRODUCTION ?? '',
+    },
+    {
+      tenantId: 'demo',
+      isDemo: true,
+      hash: process.env.PIN_HASH_DEMO ?? '',
+    },
+  ]
+}
+
+// ---- Handler ----------------------------------------------------------------
 
 export async function POST(req: NextRequest) {
-  const ip = clientIp(req)
   const now = Date.now()
+  const ip = clientIp(req)
+  const key = hashIp(ip)
 
-  // Rate-limit check
-  const rec = attempts.get(ip) ?? { count: 0, lockedUntil: 0 }
-  if (rec.lockedUntil > now) {
+  // --- 1. Validate server configuration BEFORE doing anything else ----------
+  const tenants = getTenants()
+  const missingHashes = tenants.filter((t) => !t.hash)
+  if (missingHashes.length > 0) {
+    console.error(
+      '[auth] PIN_HASH env vars missing for tenants:',
+      missingHashes.map((t) => t.tenantId).join(', '),
+      '— check Vercel environment variables',
+    )
+    // Return a config error — do NOT increment the failure counter
     return NextResponse.json(
-      { error: 'Too many attempts. Please try again shortly.' },
+      { error: 'Authentication is temporarily unavailable. Please contact support.' },
+      { status: 503 },
+    )
+  }
+
+  // --- 2. Rate-limit check --------------------------------------------------
+  const rec = await getRateLimitRec(key)
+  if (rec.lockedUntil > now) {
+    const waitSecs = Math.ceil((rec.lockedUntil - now) / 1000)
+    return NextResponse.json(
+      { error: `Too many attempts. Please try again in ${waitSecs} seconds.` },
       { status: 429 },
     )
   }
 
+  // --- 3. Parse and validate PIN shape -------------------------------------
   let pin: string
   try {
     const body = await req.json()
@@ -58,42 +120,38 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid request.' }, { status: 400 })
   }
 
-  // Basic shape check — never log the value
   if (!/^\d{4}$/.test(pin)) {
-    return NextResponse.json({ error: 'PIN must be 4 digits.' }, { status: 400 })
+    return NextResponse.json({ error: 'PIN must be exactly 4 digits.' }, { status: 400 })
   }
 
-  // Try each tenant hash in constant time (bcrypt.compare is already constant-time)
-  let matched: (typeof TENANTS)[0] | null = null
-  for (const t of TENANTS) {
-    if (t.hash && (await bcrypt.compare(pin, t.hash))) {
+  // --- 4. Compare PIN against all tenant hashes ----------------------------
+  let matched: ReturnType<typeof getTenants>[0] | null = null
+  for (const t of tenants) {
+    if (await bcrypt.compare(pin, t.hash)) {
       matched = t
       break
     }
   }
 
+  // --- 5. Handle failure ----------------------------------------------------
   if (!matched) {
-    // Increment failure counter
+    await incrementFailure(key, rec.count, now)
     const newCount = rec.count + 1
-    const lockedUntil = newCount >= MAX_ATTEMPTS ? now + LOCK_MS : 0
-    attempts.set(ip, { count: newCount, lockedUntil })
-
-    // Progressive backoff delay before responding
-    const delay = BACKOFF_MS[Math.min(newCount - 1, BACKOFF_MS.length - 1)] ?? 5000
-    if (delay > 0) await new Promise((r) => setTimeout(r, delay))
-
+    const isNowLocked = newCount >= MAX_ATTEMPTS
     return NextResponse.json(
-      { error: lockedUntil ? 'Too many attempts. Please try again shortly.' : 'Incorrect PIN. Please try again.' },
+      {
+        error: isNowLocked
+          ? 'Too many attempts. Please try again in 5 minutes.'
+          : 'Incorrect PIN. Please try again.',
+      },
       { status: 401 },
     )
   }
 
-  // Success — reset failure counter
-  attempts.delete(ip)
-
+  // --- 6. Success -----------------------------------------------------------
+  await clearFailures(key)
   const sess = { tenantId: matched.tenantId, isDemo: matched.isDemo, iat: now }
   const { name, value, opts } = setSessionCookie(sess)
-
   const res = NextResponse.json({ ok: true, isDemo: matched.isDemo, tenantId: matched.tenantId })
   res.cookies.set(name, value, opts as any)
   return res
