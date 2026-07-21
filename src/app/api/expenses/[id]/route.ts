@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { makeDb } from '@/lib/db'
-import { getSession } from '@/lib/session'
+import { getServerAccount } from '@/lib/session'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const s = getSession()
+    const s = getServerAccount()
     if (!s) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     const b = await req.json()
     await makeDb(s.tenantId).expenses.update(params.id, {
@@ -28,7 +28,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 
 export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const s = getSession()
+    const s = getServerAccount()
     if (!s) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     await makeDb(s.tenantId).expenses.remove(params.id)
     return NextResponse.json({ success: true })

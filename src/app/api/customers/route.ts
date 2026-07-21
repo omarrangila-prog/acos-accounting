@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { makeDb } from '@/lib/db'
-import { getSession } from '@/lib/session'
+import { getServerAccount } from '@/lib/session'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -14,7 +14,7 @@ function netOf(c: any): number {
 }
 
 function requireSession() {
-  const s = getSession()
+  const s = getServerAccount()
   if (!s) return null
   return s
 }

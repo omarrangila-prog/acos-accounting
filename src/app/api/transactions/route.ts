@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { makeDb } from '@/lib/db'
-import { getSession } from '@/lib/session'
+import { getServerAccount } from '@/lib/session'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 export async function POST(req: NextRequest) {
   try {
-    const s = getSession()
+    const s = getServerAccount()
     if (!s) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     const b = await req.json()
     if (!b.customerId) return NextResponse.json({ error: 'Customer required' }, { status: 400 })
@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
-    const s = getSession()
+    const s = getServerAccount()
     if (!s) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     const id = req.nextUrl.searchParams.get('id')
     if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 })

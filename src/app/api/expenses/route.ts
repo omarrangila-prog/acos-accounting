@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { makeDb } from '@/lib/db'
-import { getSession } from '@/lib/session'
+import { getServerAccount } from '@/lib/session'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 export async function GET(req: NextRequest) {
   try {
-    const s = getSession()
+    const s = getServerAccount()
     if (!s) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     const db = makeDb(s.tenantId)
     const search = (req.nextUrl.searchParams.get('search') || '').toLowerCase()
@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const s = getSession()
+    const s = getServerAccount()
     if (!s) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     const b = await req.json()
     if (!b.description || b.amount === undefined)

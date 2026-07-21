@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { makeDb } from '@/lib/db'
-import { getSession } from '@/lib/session'
+import { getServerAccount } from '@/lib/session'
 import {
   startOfMonth, endOfMonth, startOfDay, endOfDay, subMonths, format,
   startOfWeek, addDays,
@@ -17,7 +17,7 @@ function custBalance(c: any): number {
 
 export async function GET() {
   try {
-    const s = getSession()
+    const s = getServerAccount()
     if (!s) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     const db = makeDb(s.tenantId)
 

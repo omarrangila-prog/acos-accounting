@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server'
 import { makeDb } from '@/lib/db'
-import { getSession } from '@/lib/session'
+import { getServerAccount } from '@/lib/session'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 export async function GET() {
   try {
-    const s = getSession()
+    const s = getServerAccount()
     if (!s) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     const db = makeDb(s.tenantId)
 

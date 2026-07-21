@@ -9,15 +9,15 @@ import {
 } from 'lucide-react'
 import { Toaster } from 'react-hot-toast'
 import { cn } from '@/lib/utils'
+import { loadAccount, clearAccount, type ActiveAccount } from '@/lib/account'
 
-// ---- Global refresh + theme + session context ----
+// ---- Global refresh + account context ----
 type ShellCtx = {
   refreshKey: number
   triggerRefresh: () => void
-  isDemo: boolean
-  tenantId: string
+  account: ActiveAccount | null
 }
-const Ctx = createContext<ShellCtx>({ refreshKey: 0, triggerRefresh: () => {}, isDemo: false, tenantId: '' })
+const Ctx = createContext<ShellCtx>({ refreshKey: 0, triggerRefresh: () => {}, account: null })
 export const useShell = () => useContext(Ctx)
 
 const NAV = [
@@ -55,29 +55,20 @@ function DemoBadge() {
 }
 
 function Sidebar({
-  mobileOpen,
-  onClose,
-  isDemo,
-  onLogout,
-  onSwitchAccount,
+  mobileOpen, onClose, isDemo, onLogout, onSwitchAccount,
 }: {
-  mobileOpen: boolean
-  onClose: () => void
-  isDemo: boolean
-  onLogout: () => void
-  onSwitchAccount: () => void
+  mobileOpen: boolean; onClose: () => void; isDemo: boolean
+  onLogout: () => void; onSwitchAccount: () => void
 }) {
   const pathname = usePathname()
   return (
     <>
       {mobileOpen && <div className="fixed inset-0 z-40 bg-black/40 md:hidden" onClick={onClose} />}
-      <aside
-        className={cn(
-          'w-[208px] shrink-0 h-screen bg-surface-0 border-r border-border flex flex-col z-50',
-          'fixed inset-y-0 left-0 transition-transform duration-200 md:static md:translate-x-0',
-          mobileOpen ? 'translate-x-0' : '-translate-x-full',
-        )}
-      >
+      <aside className={cn(
+        'w-[208px] shrink-0 h-screen bg-surface-0 border-r border-border flex flex-col z-50',
+        'fixed inset-y-0 left-0 transition-transform duration-200 md:static md:translate-x-0',
+        mobileOpen ? 'translate-x-0' : '-translate-x-full',
+      )}>
         <div className="flex items-center justify-between px-5 py-4">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-accent text-white flex items-center justify-center font-bold text-lg">A</div>
@@ -101,9 +92,9 @@ function Sidebar({
                   const active = pathname === it.href
                   const Icon = it.icon
                   return (
-                    <Link key={it.href} href={it.href} onClick={onClose} className={active ? 'nav-item-active' : 'nav-item'}>
-                      <Icon size={18} />
-                      {it.label}
+                    <Link key={it.href} href={it.href} onClick={onClose}
+                      className={active ? 'nav-item-active' : 'nav-item'}>
+                      <Icon size={18} />{it.label}
                     </Link>
                   )
                 })}
@@ -112,23 +103,12 @@ function Sidebar({
           ))}
         </nav>
 
-        {/* Account controls at bottom of sidebar */}
         <div className="px-3 py-3 border-t border-border space-y-0.5">
-          <button
-            onClick={onSwitchAccount}
-            className="nav-item w-full text-left"
-            title="Switch to a different PIN account"
-          >
-            <UserCheck size={16} />
-            Switch Account
+          <button onClick={onSwitchAccount} className="nav-item w-full text-left">
+            <UserCheck size={16} /> Switch Account
           </button>
-          <button
-            onClick={onLogout}
-            className="nav-item w-full text-left text-danger hover:text-danger"
-            title="Lock and return to PIN screen"
-          >
-            <LogOut size={16} />
-            Logout
+          <button onClick={onLogout} className="nav-item w-full text-left text-danger hover:text-danger">
+            <LogOut size={16} /> Logout
           </button>
         </div>
       </aside>
@@ -136,15 +116,7 @@ function Sidebar({
   )
 }
 
-function TopBar({
-  onRefresh,
-  onMenu,
-  isDemo,
-}: {
-  onRefresh: () => void
-  onMenu: () => void
-  isDemo: boolean
-}) {
+function TopBar({ onRefresh, onMenu, isDemo }: { onRefresh: () => void; onMenu: () => void; isDemo: boolean }) {
   const pathname = usePathname()
   const [dark, setDark] = useState(false)
   const title = PAGE_TITLES[pathname] ?? 'Dashboard'
@@ -192,39 +164,29 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const [refreshKey, setRefreshKey] = useState(0)
   const [mobileOpen, setMobileOpen] = useState(false)
-  const [isDemo, setIsDemo] = useState(false)
-  const [tenantId, setTenantId] = useState('')
+  const [account, setAccount] = useState<ActiveAccount | null>(null)
   const triggerRefresh = useCallback(() => setRefreshKey((k) => k + 1), [])
 
-  // Fetch session info once on mount so we know if we're in demo mode
+  // Restore account from localStorage on mount
   useEffect(() => {
     if (pathname === '/login') return
-    fetch('/api/auth/session').then(async (r) => {
-      if (r.ok) {
-        const d = await r.json()
-        setIsDemo(d.isDemo ?? false)
-        setTenantId(d.tenantId ?? '')
-      }
-    }).catch(() => {})
+    const saved = loadAccount()
+    if (saved) setAccount(saved)
   }, [pathname])
 
-  const handleLogout = async () => {
-    await fetch('/api/auth/logout', { method: 'POST' })
-    setIsDemo(false)
-    setTenantId('')
+  const handleLogout = () => {
+    clearAccount()
+    setAccount(null)
     router.replace('/login')
-    router.refresh()
   }
 
-  const handleSwitchAccount = async () => {
-    await fetch('/api/auth/logout', { method: 'POST' })
-    setIsDemo(false)
-    setTenantId('')
+  const handleSwitchAccount = () => {
+    clearAccount()
+    setAccount(null)
     router.replace('/login')
-    router.refresh()
   }
 
-  // Login page: render only the page content, no shell
+  // Login page: no shell
   if (pathname === '/login') {
     return (
       <>
@@ -234,8 +196,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     )
   }
 
+  const isDemo = account?.isDemo ?? false
+
   return (
-    <Ctx.Provider value={{ refreshKey, triggerRefresh, isDemo, tenantId }}>
+    <Ctx.Provider value={{ refreshKey, triggerRefresh, account }}>
       <div className="flex h-screen overflow-hidden">
         <Sidebar
           mobileOpen={mobileOpen}
