@@ -2,17 +2,22 @@
 
 import { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import {
   LayoutGrid, FileText, Users, CreditCard, Receipt, Database,
-  BarChart3, FileBarChart, RefreshCw, Moon, Sun, Bell, CloudOff, Menu, X,
+  BarChart3, FileBarChart, RefreshCw, Moon, Sun, Bell, CloudOff, Menu, X, LogOut, UserCheck,
 } from 'lucide-react'
 import { Toaster } from 'react-hot-toast'
 import { cn } from '@/lib/utils'
 
-// ---- Global refresh + theme context ----
-type ShellCtx = { refreshKey: number; triggerRefresh: () => void }
-const Ctx = createContext<ShellCtx>({ refreshKey: 0, triggerRefresh: () => {} })
+// ---- Global refresh + theme + session context ----
+type ShellCtx = {
+  refreshKey: number
+  triggerRefresh: () => void
+  isDemo: boolean
+  tenantId: string
+}
+const Ctx = createContext<ShellCtx>({ refreshKey: 0, triggerRefresh: () => {}, isDemo: false, tenantId: '' })
 export const useShell = () => useContext(Ctx)
 
 const NAV = [
@@ -30,17 +35,41 @@ const NAV = [
   ]},
 ]
 
-const TITLES: Record<string, string> = {
-  '/': 'Dashboard', '/invoices': 'Invoices', '/customers': 'WAHHAJ SEAFOOD Software',
-  '/pdc': 'Post Dated Cheques', '/expenses': 'Expenses', '/records': 'WAHHAJ SEAFOOD Software',
-  '/analytics': 'Analytics', '/reports': 'Reports',
+const PAGE_TITLES: Record<string, string> = {
+  '/': 'Dashboard',
+  '/invoices': 'Invoices',
+  '/customers': 'Customers / Ledger',
+  '/pdc': 'Post Dated Cheques',
+  '/expenses': 'Expenses',
+  '/records': 'All Records',
+  '/analytics': 'Analytics',
+  '/reports': 'Reports',
 }
 
-function Sidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose: () => void }) {
+function DemoBadge() {
+  return (
+    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 tracking-wide">
+      DEMO
+    </span>
+  )
+}
+
+function Sidebar({
+  mobileOpen,
+  onClose,
+  isDemo,
+  onLogout,
+  onSwitchAccount,
+}: {
+  mobileOpen: boolean
+  onClose: () => void
+  isDemo: boolean
+  onLogout: () => void
+  onSwitchAccount: () => void
+}) {
   const pathname = usePathname()
   return (
     <>
-      {/* Mobile overlay */}
       {mobileOpen && <div className="fixed inset-0 z-40 bg-black/40 md:hidden" onClick={onClose} />}
       <aside
         className={cn(
@@ -53,12 +82,16 @@ function Sidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose: () => 
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-accent text-white flex items-center justify-center font-bold text-lg">A</div>
             <div>
-              <p className="font-bold text-text-primary leading-tight">ACOS</p>
+              <div className="flex items-center gap-1.5">
+                <p className="font-bold text-text-primary leading-tight">ACOS</p>
+                {isDemo && <DemoBadge />}
+              </div>
               <p className="text-[11px] text-text-muted leading-tight">Accounting Software</p>
             </div>
           </div>
           <button onClick={onClose} className="btn-ghost !px-2 !py-2 md:hidden"><X size={18} /></button>
         </div>
+
         <nav className="flex-1 overflow-y-auto px-3 py-2 space-y-4">
           {NAV.map((g) => (
             <div key={g.group}>
@@ -78,16 +111,46 @@ function Sidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose: () => 
             </div>
           ))}
         </nav>
+
+        {/* Account controls at bottom of sidebar */}
+        <div className="px-3 py-3 border-t border-border space-y-0.5">
+          <button
+            onClick={onSwitchAccount}
+            className="nav-item w-full text-left"
+            title="Switch to a different PIN account"
+          >
+            <UserCheck size={16} />
+            Switch Account
+          </button>
+          <button
+            onClick={onLogout}
+            className="nav-item w-full text-left text-danger hover:text-danger"
+            title="Lock and return to PIN screen"
+          >
+            <LogOut size={16} />
+            Logout
+          </button>
+        </div>
       </aside>
     </>
   )
 }
 
-function TopBar({ onRefresh, onMenu }: { onRefresh: () => void; onMenu: () => void }) {
+function TopBar({
+  onRefresh,
+  onMenu,
+  isDemo,
+}: {
+  onRefresh: () => void
+  onMenu: () => void
+  isDemo: boolean
+}) {
   const pathname = usePathname()
   const [dark, setDark] = useState(false)
-  const title = TITLES[pathname] ?? 'Dashboard'
-  const today = new Date().toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+  const title = PAGE_TITLES[pathname] ?? 'Dashboard'
+  const today = new Date().toLocaleDateString('en-US', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+  })
 
   useEffect(() => {
     const saved = localStorage.getItem('acos-theme') === 'dark'
@@ -107,7 +170,10 @@ function TopBar({ onRefresh, onMenu }: { onRefresh: () => void; onMenu: () => vo
       <div className="flex items-center gap-2 min-w-0">
         <button onClick={onMenu} className="btn-ghost !px-2 md:hidden" title="Menu"><Menu size={20} /></button>
         <div className="min-w-0">
-          <h1 className="text-base md:text-lg font-bold text-text-primary leading-tight truncate">{title}</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-base md:text-lg font-bold text-text-primary leading-tight truncate">{title}</h1>
+            {isDemo && <DemoBadge />}
+          </div>
           <p className="text-xs text-text-muted hidden sm:block">{today}</p>
         </div>
       </div>
@@ -122,16 +188,64 @@ function TopBar({ onRefresh, onMenu }: { onRefresh: () => void; onMenu: () => vo
 }
 
 export function AppShell({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname()
+  const router = useRouter()
   const [refreshKey, setRefreshKey] = useState(0)
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [isDemo, setIsDemo] = useState(false)
+  const [tenantId, setTenantId] = useState('')
   const triggerRefresh = useCallback(() => setRefreshKey((k) => k + 1), [])
 
+  // Fetch session info once on mount so we know if we're in demo mode
+  useEffect(() => {
+    if (pathname === '/login') return
+    fetch('/api/auth/session').then(async (r) => {
+      if (r.ok) {
+        const d = await r.json()
+        setIsDemo(d.isDemo ?? false)
+        setTenantId(d.tenantId ?? '')
+      }
+    }).catch(() => {})
+  }, [pathname])
+
+  const handleLogout = async () => {
+    await fetch('/api/auth/logout', { method: 'POST' })
+    setIsDemo(false)
+    setTenantId('')
+    router.replace('/login')
+    router.refresh()
+  }
+
+  const handleSwitchAccount = async () => {
+    await fetch('/api/auth/logout', { method: 'POST' })
+    setIsDemo(false)
+    setTenantId('')
+    router.replace('/login')
+    router.refresh()
+  }
+
+  // Login page: render only the page content, no shell
+  if (pathname === '/login') {
+    return (
+      <>
+        {children}
+        <Toaster position="top-right" toastOptions={{ style: { fontSize: '13px' } }} />
+      </>
+    )
+  }
+
   return (
-    <Ctx.Provider value={{ refreshKey, triggerRefresh }}>
+    <Ctx.Provider value={{ refreshKey, triggerRefresh, isDemo, tenantId }}>
       <div className="flex h-screen overflow-hidden">
-        <Sidebar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
+        <Sidebar
+          mobileOpen={mobileOpen}
+          onClose={() => setMobileOpen(false)}
+          isDemo={isDemo}
+          onLogout={handleLogout}
+          onSwitchAccount={handleSwitchAccount}
+        />
         <div className="flex-1 flex flex-col min-w-0">
-          <TopBar onRefresh={triggerRefresh} onMenu={() => setMobileOpen(true)} />
+          <TopBar onRefresh={triggerRefresh} onMenu={() => setMobileOpen(true)} isDemo={isDemo} />
           <main className="flex-1 overflow-y-auto bg-surface-1">{children}</main>
         </div>
       </div>

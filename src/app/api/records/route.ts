@@ -1,16 +1,20 @@
 import { NextResponse } from 'next/server'
-import { invoices as invoiceRepo, expenses as expenseRepo, pdc as pdcRepo } from '@/lib/db'
+import { makeDb } from '@/lib/db'
+import { getSession } from '@/lib/session'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-// Unified feed of all module records for the "All Records" page.
 export async function GET() {
   try {
+    const s = getSession()
+    if (!s) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const db = makeDb(s.tenantId)
+
     const [invoices, expenses, pdcs] = await Promise.all([
-      invoiceRepo.findMany(),
-      expenseRepo.findMany(),
-      pdcRepo.findMany(),
+      db.invoices.findMany(),
+      db.expenses.findMany(),
+      db.pdc.findMany(),
     ])
 
     const records = [

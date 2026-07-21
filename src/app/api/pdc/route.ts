@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { pdc } from '@/lib/db'
+import { makeDb } from '@/lib/db'
+import { getSession } from '@/lib/session'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 export async function GET(req: NextRequest) {
   try {
+    const s = getSession()
+    if (!s) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     const type = req.nextUrl.searchParams.get('type') || ''
-    const list = (await pdc.findMany())
+    const list = (await makeDb(s.tenantId).pdc.findMany())
       .filter((p) => (type ? p.pdcType === type : true))
       .sort((a, b) => {
         const ax = a.chequeDate ? new Date(a.chequeDate).getTime() : 0
@@ -22,9 +25,11 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    const s = getSession()
+    if (!s) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     const b = await req.json()
     if (!b.partyName) return NextResponse.json({ error: 'Party name required' }, { status: 400 })
-    const p = await pdc.create({
+    const p = await makeDb(s.tenantId).pdc.create({
       pdcType: b.pdcType === 'payable' ? 'payable' : 'receivable',
       partyName: b.partyName,
       chequeNumber: b.chequeNumber || null,

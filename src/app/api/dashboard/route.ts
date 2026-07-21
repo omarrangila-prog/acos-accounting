@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
-import { customers as customerRepo, invoices as invoiceRepo, expenses as expenseRepo, pdc as pdcRepo } from '@/lib/db'
+import { makeDb } from '@/lib/db'
+import { getSession } from '@/lib/session'
 import {
   startOfMonth, endOfMonth, startOfDay, endOfDay, subMonths, format,
   startOfWeek, addDays,
@@ -16,12 +17,16 @@ function custBalance(c: any): number {
 
 export async function GET() {
   try {
+    const s = getSession()
+    if (!s) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const db = makeDb(s.tenantId)
+
     const now = new Date()
     const [customers, invoices, expenses, pdcs] = await Promise.all([
-      customerRepo.findManyWithTxns(),
-      invoiceRepo.findMany(),
-      expenseRepo.findMany(),
-      pdcRepo.findMany(),
+      db.customers.findManyWithTxns(),
+      db.invoices.findMany(),
+      db.expenses.findMany(),
+      db.pdc.findMany(),
     ])
 
     let totalReceivables = 0, totalPayables = 0
@@ -33,7 +38,6 @@ export async function GET() {
 
     const monthStart = startOfMonth(now), monthEnd = endOfMonth(now)
     const todayStart = startOfDay(now), todayEnd = endOfDay(now)
-
     const inRange = (d: Date | string, a: Date, b: Date) => { const x = new Date(d); return x >= a && x <= b }
 
     const monthRevenue = invoices.filter((i) => inRange(i.date, monthStart, monthEnd)).reduce((s, i) => s + i.paidAmount, 0)
@@ -43,11 +47,9 @@ export async function GET() {
 
     const pdcReceivable = pdcs.filter((p) => p.pdcType === 'receivable').reduce((s, p) => s + p.amount, 0)
     const pdcPayable = pdcs.filter((p) => p.pdcType === 'payable').reduce((s, p) => s + p.amount, 0)
-
     const outstandingInvoices = invoices.filter((i) => i.paidAmount < i.amount).length
     const overdueCount = invoices.filter((i) => i.dueDate && new Date(i.dueDate) < now && i.paidAmount < i.amount).length
 
-    // 6-month revenue vs expenses
     const monthlyData = []
     for (let k = 5; k >= 0; k--) {
       const m = subMonths(now, k)
@@ -59,7 +61,6 @@ export async function GET() {
       })
     }
 
-    // weekly cash flow (current week, Mon-Sun)
     const wkStart = startOfWeek(now, { weekStartsOn: 1 })
     const weeklyData = []
     for (let d = 0; d < 7; d++) {

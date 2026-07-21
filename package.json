@@ -9,6 +9,8 @@
     "db:seed-customers": "node scripts/seed-customers.mjs"
   },
   "dependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "bcryptjs": "^3.0.3",
     "date-fns": "^3.6.0",
     "exceljs": "^4.4.0",
     "firebase-admin": "^14.0.0",

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { customers as customerRepo, invoices as invoiceRepo, expenses as expenseRepo, pdc as pdcRepo } from '@/lib/db'
+import { makeDb } from '@/lib/db'
+import { getSession } from '@/lib/session'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -12,6 +13,10 @@ function custBalance(c: any): number {
 
 export async function GET(req: NextRequest) {
   try {
+    const s = getSession()
+    if (!s) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const db = makeDb(s.tenantId)
+
     const type = req.nextUrl.searchParams.get('type') || 'pnl'
     const fromS = req.nextUrl.searchParams.get('from')
     const toS = req.nextUrl.searchParams.get('to')
@@ -20,7 +25,7 @@ export async function GET(req: NextRequest) {
     const inRange = (d: any) => { const x = new Date(d); return x >= from && x <= to }
 
     if (type === 'pnl') {
-      const [invoices, expenses] = await Promise.all([invoiceRepo.findMany(), expenseRepo.findMany()])
+      const [invoices, expenses] = await Promise.all([db.invoices.findMany(), db.expenses.findMany()])
       const revenue = invoices.filter((i) => inRange(i.date)).reduce((s, i) => s + i.paidAmount, 0)
       const exp = expenses.filter((e) => inRange(e.date)).reduce((s, e) => s + e.amount, 0)
       return NextResponse.json({ type, title: 'Profit & Loss', summary: { revenue, expenses: exp, netProfit: revenue - exp },
@@ -32,13 +37,13 @@ export async function GET(req: NextRequest) {
     }
 
     if (type === 'expenses') {
-      const expenses = (await expenseRepo.findMany()).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      const expenses = (await db.expenses.findMany()).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
       const rows = expenses.filter((e) => inRange(e.date))
       return NextResponse.json({ type, title: 'Expenses Report', total: rows.reduce((s, e) => s + e.amount, 0), rows })
     }
 
     if (type === 'receivables' || type === 'payables') {
-      const customers = await customerRepo.findManyWithTxns()
+      const customers = await db.customers.findManyWithTxns()
       const rows = customers.map((c) => ({ name: c.name, phone: c.phone, balance: custBalance(c) }))
         .filter((r) => type === 'receivables' ? r.balance > 0 : r.balance < 0)
         .map((r) => ({ name: r.name, phone: r.phone, debit: r.balance > 0 ? r.balance : 0, credit: r.balance < 0 ? -r.balance : 0 }))
@@ -47,13 +52,13 @@ export async function GET(req: NextRequest) {
     }
 
     if (type === 'pdc') {
-      const pdcs = await pdcRepo.findMany()
+      const pdcs = await db.pdc.findMany()
       const rows = pdcs.filter((p) => p.chequeDate ? inRange(p.chequeDate) : true)
       return NextResponse.json({ type, title: 'PDC Report', total: rows.reduce((s, p) => s + p.amount, 0), rows })
     }
 
     if (type === 'ledger') {
-      const customers = await customerRepo.findManyWithTxns()
+      const customers = await db.customers.findManyWithTxns()
       const rows = customers.map((c) => {
         const txns = c.transactions.filter((t: any) => inRange(t.date))
         const balance = custBalance(c)
